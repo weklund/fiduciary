@@ -1,0 +1,15 @@
+# Secrets
+.env
+*.env.local
+
+# Financial data (sensitive)
+data/
+*.db
+*.sqlite
+
+# OS
+.DS_Store
+
+# Node (for future MCP server)
+node_modules/
+dist/

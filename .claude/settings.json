@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Bash(plaid *)",
+      "Bash(bash scripts/sync.sh)",
+      "Bash(cat data/*)",
+      "Bash(ls data/*)",
+      "Bash(wc -l data/*)"
+    ]
+  }
+}
