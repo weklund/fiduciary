@@ -8,45 +8,85 @@ allowed-tools: Bash, Read, Write
 
 ## Instructions
 
-Generate a weekly finance report covering the last 7 days.
+Generate a weekly finance report from the unified SQLite ledger.
 
-### Data locations
+### Data source
 
-- Balances: `data/latest/balances.json`
-- Transactions: `data/latest/transactions.json`
-- Liabilities: `data/latest/liabilities.json`
-- Investments: `data/latest/investments.json`
+Primary: `data/finance.db` (SQLite)
+
+Before generating, check if data is fresh: 
+```bash
+sqlite3 data/finance.db "SELECT MAX(date) FROM transactions"
+```
+If older than 2 days, suggest running `bash scripts/sync.sh` first.
 
 ### Report sections
 
 #### 1. Account Summary
-- Current balances for all accounts (checking, savings, credit cards, investments)
-- Net worth (total assets - total liabilities)
+```sql
+SELECT name, mask, type, balance_current, balance_limit,
+       CASE WHEN balance_limit > 0 
+            THEN ROUND(balance_current * 100.0 / balance_limit, 0) 
+            ELSE NULL END as utilization_pct
+FROM accounts ORDER BY type, balance_current DESC;
+```
 
-#### 2. Weekly Cash Flow
-- Total income (negative amounts in transactions = credits/income)
-- Total spending (positive amounts)
-- Net cash flow
+#### 2. Weekly Cash Flow (last 7 days)
+```sql
+SELECT 
+  SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as income,
+  SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as spending,
+  SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) - 
+  SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as net
+FROM transactions 
+WHERE date >= date('now', '-7 days');
+```
 
-#### 3. Spending by Category (top 10)
-- Category name, total spent, transaction count
-- Sorted by amount descending
+#### 3. Spending by Category (top 10, last 7 days)
+```sql
+SELECT description, SUM(amount) as total, COUNT(*) as txns
+FROM transactions 
+WHERE amount > 0 AND date >= date('now', '-7 days')
+GROUP BY description
+ORDER BY total DESC LIMIT 15;
+```
 
 #### 4. Notable Transactions
 - Largest single purchases (top 5)
 - Any new recurring charges detected
-- Unusual merchants (first-time or infrequent)
+- Fees or interest charges
 
-#### 5. Credit Card Status
-- Balance vs. credit limit for each card
-- Utilization percentage
-- Payment due dates approaching
+```sql
+-- Fees/interest this week
+SELECT date, description, amount FROM transactions
+WHERE date >= date('now', '-7 days') AND amount > 0
+  AND (LOWER(description) LIKE '%fee%' 
+    OR LOWER(description) LIKE '%interest%'
+    OR LOWER(description) LIKE '%overdraft%')
+ORDER BY amount DESC;
+```
 
-#### 6. Week-over-Week Comparison
-- If prior week's data exists in `data/snapshots/`, compare spending totals
+#### 5. Week-over-Week Comparison
+```sql
+-- This week vs last week
+SELECT 
+  'This week' as period,
+  SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as spent
+FROM transactions WHERE date >= date('now', '-7 days')
+UNION ALL
+SELECT 
+  'Last week',
+  SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END)
+FROM transactions WHERE date >= date('now', '-14 days') AND date < date('now', '-7 days');
+```
+
+#### 6. Progress vs Goals
+Track against debt elimination plan:
+- Fees this week (target: $0)
+- Dining spend (target: <$75/week)
+- Subscription charges (flag any that should have been canceled)
 
 ### Output
 
-Save the report to `reports/weekly/YYYY-MM-DD.md` (using today's date) AND display it to the user.
-
+Save to `reports/weekly/YYYY-MM-DD.md` AND display to the user.
 Keep it concise — bullet points, not paragraphs. Lead with the most important numbers.

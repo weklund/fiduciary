@@ -9,40 +9,76 @@ allowed-tools: Bash, Read
 
 ## Instructions
 
-Perform a spending audit to find waste and optimization opportunities.
+Perform a spending audit using the unified SQLite ledger.
 
-### Data locations
+### Data source
 
-- Transactions: `data/latest/transactions.json`
-- Liabilities: `data/latest/liabilities.json`
+Primary: `data/finance.db` (SQLite)
 
 ### Analysis to perform
 
 #### 1. Recurring charges / Subscriptions
-- Find transactions that repeat monthly (same merchant, similar amount, ~30 day intervals)
-- List each with: merchant name, amount, frequency, total annual cost
-- Flag any that appear to be services/tools/subscriptions (streaming, SaaS, memberships)
+```sql
+-- Find merchants that appear monthly with consistent amounts
+SELECT description, 
+       ROUND(AVG(amount),2) as avg_amount,
+       COUNT(*) as occurrences,
+       MIN(date) as first_seen,
+       MAX(date) as last_seen
+FROM transactions 
+WHERE amount > 0 AND amount < 500
+GROUP BY description 
+HAVING COUNT(*) >= 2 
+   AND (MAX(date) > date('now', '-60 days'))
+ORDER BY avg_amount * 12 DESC;
+```
 
 #### 2. Category spending breakdown
-- Group all spending by Plaid category
-- Show monthly average per category
-- Flag categories where spending is significantly above the median month
+```sql
+-- Monthly spending by category
+SELECT substr(date,1,7) as month,
+       SUM(amount) as total_spent,
+       COUNT(*) as txn_count
+FROM transactions 
+WHERE amount > 0
+GROUP BY month
+ORDER BY month;
+```
 
 #### 3. Dining & delivery analysis
-- Sum spending on restaurants, fast food, food delivery (DoorDash, UberEats, Grubhub, etc.)
-- Calculate weekly average
-- Compare to grocery spending as a ratio
+```sql
+-- Find all dining/delivery/coffee
+SELECT date, description, amount 
+FROM transactions 
+WHERE amount > 0 
+  AND (LOWER(description) LIKE '%restaurant%'
+    OR LOWER(description) LIKE '%coffee%'
+    OR LOWER(description) LIKE '%doordash%'
+    OR LOWER(description) LIKE '%uber eats%'
+    OR LOWER(description) LIKE '%grubhub%'
+    OR LOWER(description) LIKE '%chipotle%'
+    OR LOWER(description) LIKE '%quills%'
+    OR LOWER(description) LIKE '%bandido%'
+    OR LOWER(description) LIKE '%bar %'
+    OR LOWER(description) LIKE '%grill%'
+    OR LOWER(description) LIKE '%brewing%'
+    OR LOWER(description) LIKE '%tavern%')
+ORDER BY date DESC;
+```
 
 #### 4. High-frequency merchants
-- Find merchants where you transact most frequently
-- Show count and total spend per merchant
+```sql
+SELECT description, COUNT(*) as times, SUM(amount) as total
+FROM transactions WHERE amount > 0
+GROUP BY description
+ORDER BY total DESC LIMIT 30;
+```
 
 ### Output format
 
-Present findings as:
 1. **Subscriptions to review** — list with monthly cost, annual cost, last charge date
 2. **Category red flags** — categories with unusually high spend
 3. **Quick wins** — specific, actionable cuts with estimated monthly savings
 4. **Dining/delivery score** — dining-to-grocery ratio with a recommendation
 
-Be direct and specific. Name exact dollar amounts and merchants. Don't hedge — if something looks like waste, say so.
+Be direct and specific. Name exact dollar amounts and merchants.

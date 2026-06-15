@@ -4,6 +4,7 @@
 
 # Financial data (sensitive)
 data/
+reports/
 *.db
 *.sqlite
 

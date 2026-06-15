@@ -1,50 +1,75 @@
 # Personal Finance Project
 
-Personal financial analysis toolkit using Plaid CLI + Claude Code.
+Personal financial analysis toolkit using Plaid CLI + SQLite ledger + Claude Code.
 
 ## Architecture
 
-- **Data source:** Plaid CLI (`plaid balance --json`, `plaid transactions list --json`, `plaid liabilities --json`)
-- **Storage:** JSON snapshots in `data/snapshots/` (gitignored), synced via `scripts/sync.sh`
-- **Analysis:** Claude Code skills that read the latest snapshot and answer questions
+- **Data sources:** Plaid CLI (live sync) + bank statement CSVs (historical backfill)
+- **Storage:** Unified SQLite ledger at `data/finance.db` (all transactions deduped)
+- **Sync:** `scripts/sync.sh` pulls from Plaid AND rebuilds the database
+- **Analysis:** Claude Code skills query the SQLite database directly
 
 ## Workflow
 
-1. Run `scripts/sync.sh` to pull fresh data from Plaid (or use skills that call it automatically)
-2. Ask questions conversationally — skills know where the data lives
-3. Weekly reports generated to `reports/weekly/`
-
-## Plaid CLI Setup (one-time)
-
-```bash
-brew install plaid/plaid-cli/plaid
-plaid register          # or plaid login
-plaid link              # connects bank accounts via browser
-```
+1. Run `bash scripts/sync.sh` to pull fresh data and update the ledger
+2. Ask questions conversationally — skills query `data/finance.db`
+3. To add historical data: drop CSVs into `data/statements/`, then run `python3 scripts/ingest.py`
+4. Weekly reports generated to `reports/weekly/`
 
 ## Key Commands
 
 ```bash
-plaid balance --json                      # all account balances
-plaid transactions list --json            # recent transactions
-plaid transactions list --count 500 --json  # more history
-plaid liabilities --json                  # credit card details
-plaid investments holdings --json         # investment positions
-plaid investments transactions --json     # investment activity
+bash scripts/sync.sh                      # sync from Plaid + rebuild DB
+python3 scripts/ingest.py                 # rebuild DB from all sources (no Plaid call)
+python3 scripts/parse-statements.py       # find HSA-eligible expenses in CSVs
+sqlite3 data/finance.db "SELECT ..."      # direct query
 ```
 
-## Data Location
+## Database Schema
 
-All financial data lives in `data/` (gitignored):
-- `data/snapshots/balances-YYYY-MM-DD.json`
-- `data/snapshots/transactions-YYYY-MM-DD.json`
-- `data/snapshots/liabilities-YYYY-MM-DD.json`
-- `data/snapshots/investments-YYYY-MM-DD.json`
-- `data/latest/` — symlinks or copies of the most recent snapshot
+```sql
+transactions (
+  id TEXT PRIMARY KEY,        -- SHA256 hash for dedup
+  date TEXT,                  -- ISO YYYY-MM-DD
+  description TEXT,
+  amount REAL,                -- POSITIVE = spent, NEGATIVE = income
+  merchant TEXT,
+  category TEXT,              -- Plaid category (may be empty for CSV)
+  account_name TEXT,
+  account_mask TEXT,          -- last 4 digits
+  account_type TEXT,          -- depository, credit, loan, investment
+  institution TEXT,
+  source TEXT,                -- 'plaid' or 'csv'
+  source_file TEXT
+);
+
+accounts (
+  account_id TEXT PRIMARY KEY,
+  name TEXT, type TEXT, subtype TEXT, mask TEXT,
+  institution_id TEXT,
+  balance_current REAL, balance_available REAL, balance_limit REAL,
+  last_updated TEXT
+);
+```
+
+## Data Coverage
+
+- **Plaid (live):** March 6, 2026 – present (rolling 30-day sync window)
+- **Amex CSVs:** January 2025 – February 2026 (Platinum + Gold)
+- **Chase PDFs:** December 2025 – February 2026 (read manually, not in DB yet)
+- **Total:** ~2,274 transactions, Jan 2025 – Jun 2026
+
+## Adding Historical Data
+
+1. Download CSV from bank website (Activity → Download → CSV)
+2. Drop into `data/statements/`
+3. Run `python3 scripts/ingest.py`
+4. Supports: Amex, Chase, Capital One, generic CSV formats
 
 ## Conventions
 
-- All amounts from Plaid are POSITIVE for debits (money spent) and NEGATIVE for credits (income/refunds)
+- POSITIVE amounts = money spent (debits)
+- NEGATIVE amounts = money received (credits/income)
 - Dates are ISO 8601 (YYYY-MM-DD)
-- Categories come from Plaid's enriched category taxonomy
+- Deduplication by hash of (date, description, amount, account_mask)
 - Never commit financial data or secrets to git
