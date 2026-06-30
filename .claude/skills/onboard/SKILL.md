@@ -137,10 +137,17 @@ Also assess capacity (distinct from tolerance):
 
 Once you've gathered enough to be useful (you don't need every answer — adapt to scope):
 
+**First, check for existing context:**
+```bash
+grep -c "Client Context" CLAUDE.md 2>/dev/null
+ls ~/.claude/projects/*/memory/user_financial-profile.md 2>/dev/null
+```
+If existing context is found, present what's there and ask: "I see you've done this before. Want to update your existing profile, or start fresh?" If updating, show what changed and merge rather than overwrite.
+
 1. **Draft the Client Context section** — present it to the user in a code block
 2. **Ask for corrections** — "Does this capture your situation accurately? Anything to add or change?"
-3. **Write to CLAUDE.md** — append/replace the `## Client Context` section
-4. **Write memory files** — create appropriate memory files for durable personal context
+3. **Write memory files** — create/update memory files for durable personal context (this is the PRIMARY output — persists across sessions, never committed to git)
+4. **Optionally update CLAUDE.md** — if the user wants the context available to other Agent Skills-compatible tools, offer to write to the `## Client Context` section. Warn them: "This file is tracked by git — don't commit it with personal data unless you want it public. You can add it to `.git/info/exclude` to keep it local."
 
 #### Client Context Template
 

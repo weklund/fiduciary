@@ -47,7 +47,7 @@ ORDER BY month;
 
 #### 3. Dining & delivery analysis
 ```sql
--- Find all dining/delivery/coffee
+-- Find all dining/delivery/coffee (common national chains + generic patterns)
 SELECT date, description, amount 
 FROM transactions 
 WHERE amount > 0 
@@ -57,14 +57,23 @@ WHERE amount > 0
     OR LOWER(description) LIKE '%uber eats%'
     OR LOWER(description) LIKE '%grubhub%'
     OR LOWER(description) LIKE '%chipotle%'
-    OR LOWER(description) LIKE '%quills%'
-    OR LOWER(description) LIKE '%bandido%'
+    OR LOWER(description) LIKE '%starbucks%'
+    OR LOWER(description) LIKE '%mcdonald%'
     OR LOWER(description) LIKE '%bar %'
     OR LOWER(description) LIKE '%grill%'
     OR LOWER(description) LIKE '%brewing%'
-    OR LOWER(description) LIKE '%tavern%')
+    OR LOWER(description) LIKE '%tavern%'
+    OR LOWER(description) LIKE '%pizza%'
+    OR LOWER(description) LIKE '%taqueria%'
+    OR LOWER(description) LIKE '%sushi%'
+    OR LOWER(description) LIKE '%cafe%'
+    OR LOWER(description) LIKE '%pub %'
+    OR LOWER(description) LIKE '%bistro%')
 ORDER BY date DESC;
 ```
+Note: This query catches common patterns but will miss local restaurants. Supplement
+by checking the Plaid `category` field if available, or look at merchants with
+amounts in the $8-$80 range that appear on evenings/weekends.
 
 #### 4. High-frequency merchants
 ```sql

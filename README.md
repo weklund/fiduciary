@@ -1,4 +1,4 @@
-# Finance Copilot
+# Fiduciary
 
 A personal financial advisor that runs locally on your machine. Connects to your bank accounts via Plaid, stores everything in a local SQLite database, and uses Claude Code as a conversational advisor — grounded in your real transaction data, not generic platitudes.
 
@@ -21,6 +21,8 @@ Advisor: looks at your actual balances, rates, income stability — gives a pers
 
 It's not an app. It's a toolkit that turns Claude Code into a fiduciary financial advisor with access to your actual data.
 
+Skills follow the [Agent Skills open standard](https://agentskills.io) — also compatible with Hermes Agent, Gemini CLI, Cursor, GitHub Copilot, and 42+ other tools.
+
 ## Setup (5 minutes)
 
 ### Prerequisites
@@ -32,8 +34,8 @@ It's not an app. It's a toolkit that turns Claude Code into a fiduciary financia
 ### 1. Clone and enter the project
 
 ```bash
-git clone <this-repo>
-cd finance-copilot
+git clone https://github.com/weklund/fiduciary.git
+cd fiduciary
 ```
 
 ### 2. Install Plaid CLI
@@ -125,7 +127,7 @@ These aren't opinions — they're synthesized from CFP Board standards, the fidu
 ## Privacy & Security
 
 - **All data is local.** `data/` is gitignored. Nothing financial is ever committed.
-- **Your profile stays on your machine.** The `/onboard` intake writes to Claude Code's local memory system (`~/.claude/projects/`), not to the repository.
+- **Your profile stays on your machine.** The `/onboard` intake writes to Claude Code's local memory system (`~/.claude/projects/`), not to the repository. The `## Client Context` section in CLAUDE.md is a placeholder — if you populate it, add it to your local `.git/info/exclude` to prevent accidental commits.
 - **No API keys in the repo.** Plaid CLI handles authentication separately.
 - **No tracking, no analytics, no telemetry.** This is a local tool, not a service.
 
@@ -171,6 +173,28 @@ This tool exists because:
 2. Generic advice ("save more, spend less") doesn't account for YOUR situation
 3. A fiduciary advisor costs $200-400/hour and meets quarterly at best
 4. Your bank has the data — you should too, queryable, on your terms
+
+## Works With
+
+Built for [Claude Code](https://claude.ai/code). Also compatible with any tool supporting the [Agent Skills standard](https://agentskills.io):
+
+- Hermes Agent (NousResearch)
+- Gemini CLI
+- Cursor
+- GitHub Copilot
+- OpenAI Codex
+- JetBrains Junie
+- [42+ others](https://agentskills.io/clients)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines. Issues and PRs welcome.
+
+Good first contributions:
+- Add CSV parsers for new banks (see `scripts/ingest.py`)
+- Improve category detection in spending-audit
+- Add new advisory frameworks to CLAUDE.md
+- Write new skills for specific financial planning tasks
 
 ## License
 

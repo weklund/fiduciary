@@ -1,0 +1,38 @@
+name: Feature Request
+description: Suggest a new skill, framework, or improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What financial question or workflow are you trying to address?
+      placeholder: "I want to see projected debt payoff dates based on different payment strategies..."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How would you like this to work? (skill, framework addition, script, etc.)
+      placeholder: "A /debt-payoff skill that calculates snowball vs avalanche timelines..."
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type of contribution
+      options:
+        - New skill
+        - New advisory framework
+        - Bank/CSV parser
+        - Improvement to existing skill
+        - Dashboard / reporting
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Any references, prior art, or examples that would help?

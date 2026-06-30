@@ -1,0 +1,45 @@
+name: Bug Report
+description: Something isn't working correctly
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug clearly — what did you expect vs. what actually happened?
+      placeholder: "I ran /spending-audit and it missed all my restaurant transactions..."
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: How can we trigger this bug?
+      placeholder: |
+        1. Run /spending-audit
+        2. Check the dining section
+        3. Notice local restaurants are missing
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Skill (/onboard)
+        - Skill (/finance-query)
+        - Skill (/spending-audit)
+        - Skill (/weekly-report)
+        - Skill (/sync-data)
+        - Scripts (sync.sh, ingest.py)
+        - Database / Schema
+        - CLAUDE.md frameworks
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Claude Code version, data sources connected
+      placeholder: "macOS 15, Claude Code 1.x, Plaid connected (Chase + Amex)"

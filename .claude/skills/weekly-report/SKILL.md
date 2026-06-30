@@ -81,10 +81,11 @@ FROM transactions WHERE date >= date('now', '-14 days') AND date < date('now', '
 ```
 
 #### 6. Progress vs Goals
-Track against debt elimination plan:
-- Fees this week (target: $0)
-- Dining spend (target: <$75/week)
-- Subscription charges (flag any that should have been canceled)
+Check if `## Client Context` in CLAUDE.md or memory files contain "Key Metrics to Track".
+If so, report progress against those targets. If not, use sensible defaults:
+- Fees/interest this week (always flag — target is always $0)
+- Dining-to-grocery ratio (flag if >2x)
+- New subscription charges (flag anything recurring that wasn't present last month)
 
 ### Output
 
