@@ -1,5 +1,8 @@
 # Fiduciary
 
+[![Agent Skills](https://skills.sh/b/weklund/fiduciary)](https://skills.sh/weklund/fiduciary)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 A personal financial advisor that runs locally on your machine. Connects to your bank accounts via Plaid, stores everything in a local SQLite database, and uses Claude Code as a conversational advisor — grounded in your real transaction data, not generic platitudes.
 
 Built on the CFP Board's fiduciary planning process. No data leaves your machine. No subscriptions. No product recommendations. Just you, your data, and an advisor that works in your interest.
