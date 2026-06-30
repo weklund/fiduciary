@@ -30,9 +30,11 @@ Skills follow the [Agent Skills open standard](https://agentskills.io) — also 
 
 ### Prerequisites
 
-- [Claude Code](https://claude.ai/code) installed and authenticated
 - macOS or Linux (Windows via WSL)
 - Python 3.8+
+- One of:
+  - [Claude Code](https://claude.ai/code) installed and authenticated, OR
+  - [Hermes Agent](https://github.com/NousResearch/hermes-agent) installed
 
 ### 1. Clone and enter the project
 
@@ -57,9 +59,11 @@ bash scripts/sync.sh
 
 This pulls transactions from Plaid and builds the SQLite database at `data/finance.db`.
 
-### 4. Run the intake
+### 4. Connect your agent
 
-Open Claude Code in this directory and run:
+#### Option A: Claude Code
+
+Open Claude Code in this directory. Skills are auto-discovered from `.claude/skills/`.
 
 ```
 /onboard
@@ -67,7 +71,33 @@ Open Claude Code in this directory and run:
 
 This conducts a financial advisor intake — asks about your goals, situation, risk tolerance, and concerns — then writes a personalized context file so all future advice is tailored to you.
 
+#### Option B: Hermes Agent
+
+Point Hermes at this directory and install the skills:
+
+```bash
+# Copy advisory frameworks to Hermes persona
+cp CLAUDE.md ~/.hermes/SOUL.md
+
+# Install skills (Hermes reads the Agent Skills format directly)
+hermes skills add ./\.claude/skills/onboard
+hermes skills add ./\.claude/skills/finance-query
+hermes skills add ./\.claude/skills/spending-audit
+hermes skills add ./\.claude/skills/weekly-report
+hermes skills add ./\.claude/skills/sync-data
+```
+
+Then run the intake:
+
+```
+/onboard
+```
+
+Hermes stores your profile in `~/.hermes/USER.md` and `~/.hermes/MEMORY.md` instead of Claude Code's memory system. The skills work the same way.
+
 ### 5. Start asking questions
+
+Works the same in both agents:
 
 ```
 "What are my biggest expenses this month?"
