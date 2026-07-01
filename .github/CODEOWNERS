@@ -1,0 +1,6 @@
+# Require review for agent config and skill files — these are executable
+# instructions that run with full filesystem access across all agent runtimes.
+/.claude/skills/    @weklund
+/CLAUDE.md          @weklund
+/AGENTS.md          @weklund
+/.cursorrules       @weklund

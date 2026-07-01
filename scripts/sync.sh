@@ -9,6 +9,7 @@ TODAY=$(date +%Y-%m-%d)
 
 mkdir -p "$SNAPSHOT_DIR" "$LATEST_DIR"
 chmod 700 "$DATA_DIR" "$SNAPSHOT_DIR" "$LATEST_DIR"
+touch "$DATA_DIR/.metadata_never_index"
 
 echo "Syncing Plaid data for $TODAY..."
 

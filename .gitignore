@@ -8,6 +8,10 @@ reports/
 *.db
 *.sqlite
 
+# Local personalization (contains PII)
+CLAUDE.local.md
+*.local.md
+
 # OS
 .DS_Store
 

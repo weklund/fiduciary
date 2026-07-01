@@ -1,0 +1,92 @@
+name: PII Scan
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  pii-scan:
+    name: Scan for financial PII in diff
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for data files
+        run: |
+          echo "Checking for data/ or database files in the PR..."
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          # Check for data/ directory files
+          if echo "$FILES" | grep -q "^data/"; then
+            echo "::error::PR contains files from data/ directory. These contain sensitive financial data and must not be committed."
+            exit 1
+          fi
+
+          # Check for database files
+          if echo "$FILES" | grep -qE '\.(db|sqlite)$'; then
+            echo "::error::PR contains database files (.db or .sqlite). These contain sensitive financial data and must not be committed."
+            exit 1
+          fi
+
+          echo "No data files found in diff."
+
+      - name: Flag agent config and skill modifications
+        run: |
+          echo "Checking for agent config/skill file changes..."
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          if echo "$FILES" | grep -qE '^\.claude/skills/|^CLAUDE\.md$|^AGENTS\.md$|^\.cursorrules$'; then
+            echo "::warning::This PR modifies agent configuration or skill files."
+            echo "These files are executable instructions that run with full filesystem access."
+            echo "Requires CODEOWNER review before merge."
+            echo ""
+            echo "Modified agent files:"
+            echo "$FILES" | grep -E '^\.claude/skills/|^CLAUDE\.md$|^AGENTS\.md$|^\.cursorrules$'
+          fi
+
+      - name: Scan diff for financial PII patterns
+        run: |
+          echo "Scanning PR diff for financial PII patterns..."
+          DIFF=$(git diff origin/${{ github.base_ref }}...HEAD -- ':(exclude).github/workflows/pii-scan.yml' ':(exclude).githooks/pre-commit' ':(exclude)design/THREAT-MODEL.md' ':(exclude)docs/' ':(exclude)CONTRIBUTING.md' ':(exclude).github/pull_request_template.md')
+          FOUND=0
+
+          # Pattern 1: Account number masks (***NNNN pattern)
+          if echo "$DIFF" | grep -qE '^\+.*\*\*\*[0-9]{4}'; then
+            echo "::warning::Found account number pattern (***NNNN) in diff"
+            echo "$DIFF" | grep -nE '^\+.*\*\*\*[0-9]{4}' | head -5
+            FOUND=$((FOUND + 1))
+          fi
+
+          # Pattern 2: SSN patterns (NNN-NN-NNNN)
+          if echo "$DIFF" | grep -qE '^\+.*[0-9]{3}-[0-9]{2}-[0-9]{4}'; then
+            echo "::error::Found SSN pattern (NNN-NN-NNNN) in diff"
+            echo "$DIFF" | grep -nE '^\+.*[0-9]{3}-[0-9]{2}-[0-9]{4}' | head -5
+            FOUND=$((FOUND + 1))
+          fi
+
+          # Pattern 3: Dollar amounts in Client Context sections
+          # Only flag lines that are added (+) and contain dollar amounts near PII keywords
+          if echo "$DIFF" | grep -qE '^\+.*(income|salary|balance|debt|payment|savings|net worth).*\$[0-9][0-9,]+'; then
+            echo "::error::Found dollar amounts with financial context keywords in diff"
+            echo "$DIFF" | grep -nE '^\+.*(income|salary|balance|debt|payment|savings|net worth).*\$[0-9][0-9,]+' | head -5
+            FOUND=$((FOUND + 1))
+          fi
+
+          # Pattern 4: Dollar amounts near PII keywords (reverse order)
+          if echo "$DIFF" | grep -qE '^\+.*\$[0-9][0-9,]+.*(income|salary|balance|debt|payment|savings|net worth)'; then
+            echo "::error::Found dollar amounts with financial context keywords in diff"
+            echo "$DIFF" | grep -nE '^\+.*\$[0-9][0-9,]+.*(income|salary|balance|debt|payment|savings|net worth)' | head -5
+            FOUND=$((FOUND + 1))
+          fi
+
+          if [ $FOUND -gt 0 ]; then
+            echo ""
+            echo "::error::PII patterns detected in this PR. Please review the flagged lines above."
+            echo "If these are false positives (e.g., framework examples), add a comment explaining why."
+            exit 1
+          fi
+
+          echo "No PII patterns detected."
