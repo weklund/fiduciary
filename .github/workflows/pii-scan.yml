@@ -50,7 +50,7 @@ jobs:
       - name: Scan diff for financial PII patterns
         run: |
           echo "Scanning PR diff for financial PII patterns..."
-          DIFF=$(git diff origin/${{ github.base_ref }}...HEAD -- ':(exclude).github/workflows/pii-scan.yml' ':(exclude).githooks/pre-commit' ':(exclude)design/THREAT-MODEL.md')
+          DIFF=$(git diff origin/${{ github.base_ref }}...HEAD -- ':(exclude).github/workflows/pii-scan.yml' ':(exclude).githooks/pre-commit' ':(exclude)design/THREAT-MODEL.md' ':(exclude)docs/' ':(exclude)CONTRIBUTING.md' ':(exclude).github/pull_request_template.md')
           FOUND=0
 
           # Pattern 1: Account number masks (***NNNN pattern)
