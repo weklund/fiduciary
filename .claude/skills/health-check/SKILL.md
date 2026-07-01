@@ -7,7 +7,8 @@ description: >
   when more than 30 days have passed since the last health check. Compares
   current state against goals, checks all key ratios, identifies which layer
   of the financial pyramid needs attention, and produces a prioritized action plan.
-allowed-tools: Bash, Read
+  Spawns research agents for tactical implementation details.
+allowed-tools: Bash, Read, Agent
 ---
 
 ## Quarterly Financial Health Assessment
@@ -205,7 +206,47 @@ Present the assessment in this structure:
 
 ---
 
-### Step 6: Save
+### Step 6: Tactical Research for Top Actions
+
+For each of the top 3 actions, spawn a research agent to find the best
+implementation path using the user's specific accounts and tools.
+
+Use the Agent tool:
+
+```
+For each priority action, spawn an agent with a prompt like:
+
+"The user's top financial priority is: [action from Step 5, e.g., 'eliminate 
+$130/month in credit card interest']. Their accounts are: [list relevant accounts 
+with balances and limits]. Research the optimal tactical path:
+- Which specific account to use and why
+- Whether a balance transfer, refinance, or consolidation would be cheaper
+- Current promo rates available on their existing cards
+- Step-by-step execution instructions
+- Timeline and milestone targets
+Return a specific, actionable implementation plan — not generic advice."
+```
+
+Only research actions where the tactical path isn't obvious. "Set up autopay"
+doesn't need research. "Reduce $600/month in interest charges" does.
+
+Incorporate the tactical findings into the Top 3 Actions section:
+
+```
+### Top 3 Actions (This Quarter)
+
+1. **[Strategic action]**
+   - **Tactic:** [Specific implementation using their accounts]
+   - **Saves:** $[amount]/month
+   - **Steps:** [1, 2, 3]
+   - **Timeline:** [When to complete by]
+
+2. ...
+```
+
+---
+
+### Step 7: Save
 
 Save the report to `reports/health-check-YYYY-MM-DD.md` for future comparison.
 

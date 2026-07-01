@@ -134,6 +134,7 @@ Works the same in both agents:
 | `/finance-query` | Ask any question about your finances (auto-triggered) |
 | `/next-dollar` | "What should I do with $X?" — applies order of operations to YOUR situation |
 | `/health-check` | Quarterly full assessment — pyramid status, ratios, goal progress, action plan |
+| `/tactics` | Optimize your cards, accounts, and tools — reward maximization, balance transfers, fee elimination |
 | `/spending-audit` | Find waste, unused subscriptions, overspending |
 | `/weekly-report` | Generate a weekly spending summary |
 
@@ -199,6 +200,7 @@ scripts/
   finance-query/       ← Query your finances
   next-dollar/         ← "Where should my next $X go?"
   health-check/        ← Quarterly full financial assessment
+  tactics/             ← Card/account optimization with deep research
   sync-data/           ← Sync fresh data
   spending-audit/      ← Find waste and subscriptions
   weekly-report/       ← Weekly spending summary

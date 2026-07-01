@@ -8,7 +8,7 @@ description: >
   variant of "I have $X — what's the best use?" Also use for "should I pay off
   X or save?" questions. THIS IS THE MOST COMMON FINANCIAL QUESTION — trigger
   aggressively.
-allowed-tools: Bash, Read
+allowed-tools: Bash, Read, Agent
 ---
 
 ## Next Dollar Guidance
@@ -220,3 +220,47 @@ Lifestyle inflation is the enemy. Recommend: commit 50-100% of the INCREASE to s
 
 **"Should I save or enjoy life?"**
 Not a binary. Reference the Conscious Spending Framework: fixed costs 50-60%, savings 15-20%, guilt-free spending 20-35%. If they're in the savings target, spending more IS the right answer. Don't be the advisor who makes people feel guilty for living.
+
+---
+
+### Step 5: Tactical Implementation
+
+After giving the strategic recommendation, add a tactical layer: HOW to execute
+with their specific accounts.
+
+Use the Agent tool to research implementation details when the recommendation
+involves a card/account-specific action:
+
+```
+Spawn an agent when the recommendation involves:
+- Paying a specific debt → research if balance transfer would be cheaper
+- Building savings → research which of their accounts has the best rate
+- Making a large purchase → research which card maximizes rewards for that category
+- Debt payoff ordering → research current APRs and any promo rate options
+```
+
+Example agent prompt for balance transfer research:
+"The user has $[X] on [Card A] at [Y]% APR. They also have [Card B] with 
+$[available] available and [Z]% utilization. Research whether [Card B] 
+currently offers balance transfer promotions, what the transfer fee would be, 
+and calculate the break-even: is it worth transferring given [time to pay off]?"
+
+Present the tactical step as:
+
+```
+### How to Execute
+
+**Account to use:** [specific card/account name + last 4]
+**Why this one:** [reward rate, 0% promo, lowest fee, etc.]
+**Steps:**
+1. [Exact action]
+2. [Exact action]
+3. [Set up autopay for $X/month to pay off by Y date]
+
+💡 **Optimization:** [Any additional angle — e.g., "put the autopay on 
+your Gold card for the 1% back on the payment itself"]
+```
+
+If the tactical research reveals a significantly better path than the original
+recommendation, say so: "Actually, before paying this directly, you should 
+balance-transfer first — here's why..."
