@@ -132,6 +132,8 @@ Works the same in both agents:
 | `/onboard` | Financial advisor intake — sets up your personalized profile |
 | `/sync-data` | Pull fresh transactions from Plaid |
 | `/finance-query` | Ask any question about your finances (auto-triggered) |
+| `/next-dollar` | "What should I do with $X?" — applies order of operations to YOUR situation |
+| `/health-check` | Quarterly full assessment — pyramid status, ratios, goal progress, action plan |
 | `/spending-audit` | Find waste, unused subscriptions, overspending |
 | `/weekly-report` | Generate a weekly spending summary |
 
@@ -175,6 +177,8 @@ scripts/
 .claude/skills/        ← Conversational finance skills
   onboard/             ← First-time intake interview
   finance-query/       ← Query your finances
+  next-dollar/         ← "Where should my next $X go?"
+  health-check/        ← Quarterly full financial assessment
   sync-data/           ← Sync fresh data
   spending-audit/      ← Find waste and subscriptions
   weekly-report/       ← Weekly spending summary
