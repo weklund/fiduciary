@@ -336,6 +336,95 @@ Threat Surfaces:
 
 ---
 
+### T-12: Agent Session Logs Persist Financial Data in Plaintext
+
+| Field | Value |
+|-------|-------|
+| **STRIDE Category** | Information Disclosure |
+| **Threat** | Every agent runtime that processes financial queries stores the full conversation — including raw SQL results containing transactions, balances, income, and spending — in plaintext session logs. These logs accumulate over time and are never encrypted. Specific paths: Claude Code (`~/.claude/projects/`), Hermes (`~/.hermes/state.db` — 112MB SQLite with FTS5 full-text search indexing), Gemini CLI (`~/.gemini/tmp/`), Cursor (`~/Library/Application Support/Cursor/`). A compromised machine, backup service, or disk recovery yields the complete financial history of every query ever run. |
+| **Who** | Malware with user-level file read, cloud backup services syncing home directories, disk recovery after sale/disposal, or anyone with physical access to an unlocked machine. |
+| **Likelihood** | **MEDIUM** — This happens by design on every financial query across ALL supported runtimes. No runtime encrypts session history at rest. Hermes specifically indexes all messages with full-text search, making financial data trivially discoverable. |
+| **Impact** | **HIGH** — Session logs contain the RESULTS of financial queries — raw transaction lists, account balances, income analysis, debt details. More complete than the database itself because they include the LLM's analysis and correlations. |
+| **Current Mitigations** | Hermes: configurable auto-prune (default 90 days). Claude Code: `cleanupPeriodDays` setting (default 30 days). Other runtimes: indefinite retention. Full-disk encryption is the primary defense. |
+| **Recommended Mitigations** | |
+| **Priority** | **P1** |
+
+**Recommended actions:**
+
+1. **Document session log locations in README** for each supported runtime, with instructions to configure retention and exclude from backups.
+2. **Recommend aggressive retention settings:**
+   - Hermes: `sessions.retention_days: 7` and `sessions.auto_prune: true`
+   - Claude Code: `cleanupPeriodDays: 7`
+3. **Add to setup instructions:** exclude `~/.hermes/state.db`, `~/.claude/projects/`, and equivalent paths from cloud sync (iCloud, Dropbox, OneDrive).
+4. **Note that Hermes FTS5 indexing makes financial data instantly searchable** — anyone with read access to `state.db` can `SELECT * FROM messages_fts WHERE messages_fts MATCH 'balance OR income OR debt'`.
+
+---
+
+### T-13: Multi-Hop Provider Routing (OpenRouter / Model Aggregators)
+
+| Field | Value |
+|-------|-------|
+| **STRIDE Category** | Information Disclosure |
+| **Threat** | When using model aggregators like OpenRouter (Hermes's default), financial data traverses TWO companies' infrastructure: the aggregator AND the underlying model provider (e.g., OpenRouter → DeepSeek, or OpenRouter → Anthropic). Each hop has its own data retention policy, jurisdiction, and breach surface. The user's data is subject to the LEAST restrictive policy in the chain, which may not be obvious from the top-level configuration. |
+| **Who** | The aggregator (OpenRouter), the underlying model provider, attackers of either, or legal authorities in either's jurisdiction (some providers are based in jurisdictions with mandatory data sharing). |
+| **Likelihood** | **MEDIUM** — Hermes defaults to OpenRouter. Users who install Hermes and connect it to this project will send financial data through OpenRouter by default without explicit awareness of the routing. |
+| **Impact** | **HIGH** — Financial data (transactions, balances, spending patterns) passes through and may be retained by multiple parties. Some underlying providers (e.g., DeepSeek — China-based) operate under data governance regimes that may compel data sharing with government entities. |
+| **Current Mitigations** | README documents that data goes to the user's LLM provider. Users can choose their provider. |
+| **Recommended Mitigations** | |
+| **Priority** | **P1** |
+
+**Recommended actions:**
+
+1. **Add provider-awareness section** to README explaining multi-hop routing risks. Specifically: "If using OpenRouter, your data passes through OpenRouter AND the underlying model provider. Check both retention policies."
+2. **Recommend direct API connections** for financial workloads: Anthropic API (direct), OpenAI API (direct), or Ollama (local). Avoid aggregators for sensitive data.
+3. **Warn about jurisdiction** — some model providers operate in jurisdictions with mandatory data sharing laws. Document which providers are in which jurisdictions.
+4. **For Hermes users specifically:** recommend `provider: anthropic` or `provider: ollama` in `config.yaml` rather than the default `provider: openrouter`.
+
+---
+
+### T-14: Agent Config Files as Cross-Runtime Attack Vector
+
+| Field | Value |
+|-------|-------|
+| **STRIDE Category** | Tampering / Elevation of Privilege |
+| **Threat** | CLAUDE.md, `.claude/skills/`, and AGENTS.md are read and executed by multiple agent runtimes (Claude Code, Hermes, Gemini CLI, Cursor, etc.). A malicious PR that subtly modifies these files can alter agent behavior for ANY user running ANY compatible runtime. Active supply chain campaigns (TrapDoor, Hades Worm — May-June 2026) specifically target these config files via npm packages and poisoned repositories. Additionally, Hermes's skill self-creation feature means the agent may auto-generate new skills based on patterns in the codebase, potentially amplifying a subtle instruction injection. |
+| **Who** | Supply chain attackers planting poisoned config in dependencies, malicious contributors modifying skill definitions, or compromised upstream repos that this project depends on. |
+| **Likelihood** | **MEDIUM** — Active campaigns targeting agent config files are documented (TrapDoor: 34+ malicious npm packages, Hades Worm: detonates on folder open). This project is MIT-licensed and accepts contributions, making it a viable target. |
+| **Impact** | **CRITICAL** — A modified CLAUDE.md or SKILL.md could instruct the agent to exfiltrate financial data, modify sync scripts to insert backdoors, alter financial advice to serve attacker interests, or create persistent access. The agent has full filesystem access. |
+| **Current Mitigations** | GitHub branch protection requires PRs. PII scan CI check reviews diffs. PR template includes checklist. Hermes has context file injection scanning (checks for invisible Unicode, hidden HTML divs). |
+| **Recommended Mitigations** | |
+| **Priority** | **P1** |
+
+**Recommended actions:**
+
+1. **Add CODEOWNERS file** requiring explicit review of `.claude/skills/`, `CLAUDE.md`, and any agent config file changes.
+2. **CI check for skill file modifications** — flag any PR that modifies skill definitions for mandatory human review (auto-approve should never apply to these).
+3. **Document that skills are executable code** — in CONTRIBUTING.md, explicitly state: "Skill files (.claude/skills/) are executed as instructions by LLM agents. Treat modifications with the same scrutiny as code changes."
+4. **Pin agent runtime versions** — document recommended minimum versions that include injection scanning (Hermes ≥ v2026.6.x for context file scanning).
+5. **Consider skill signing** — while the Agent Skills standard doesn't support it yet, a local verification (SHA hash of skill files checked at runtime) could detect tampering.
+
+---
+
+### T-15: Hermes Trajectory Capture (Training Data Pipeline)
+
+| Field | Value |
+|-------|-------|
+| **STRIDE Category** | Information Disclosure |
+| **Threat** | Hermes Agent has a "trajectory capture" feature (`agent.save_trajectories: true` in config) that saves full conversations in ShareGPT-compatible JSONL format for NousResearch's reinforcement learning pipeline. If accidentally enabled (or enabled by default in batch runner mode), complete financial conversations — including account balances, transaction histories, and spending analysis — would be saved to `trajectory_samples.jsonl` and potentially uploaded for model training. |
+| **Who** | NousResearch (if trajectories are submitted), or anyone with read access to the JSONL file on disk. Batch runner mode always saves trajectories regardless of user config. |
+| **Likelihood** | **LOW** — Opt-in for interactive sessions (default off). However, batch runner ALWAYS saves trajectories, and a user who runs Hermes with a batch config against this project would expose financial data. |
+| **Impact** | **HIGH** — Full conversation transcripts including financial data could end up in a training dataset, permanently embedding the user's financial information in a model's weights — irreversible and undetectable. |
+| **Current Mitigations** | Feature is opt-in for interactive use. No trajectory capture in default config. |
+| **Recommended Mitigations** | |
+| **Priority** | **P2** |
+
+**Recommended actions:**
+
+1. **Document in README:** "If using Hermes Agent, ensure `agent.save_trajectories: false` in `~/.hermes/config.yaml`. Never use the batch runner against this project."
+2. **Add a check to the `/sync-data` skill** — if running under Hermes, warn if trajectory capture is enabled.
+
+---
+
 ## Threat Summary Matrix
 
 | ID | Threat | STRIDE | Likelihood | Impact | Priority |
@@ -344,12 +433,16 @@ Threat Surfaces:
 | T-2 | CLAUDE.md as PII vector (by design) | I | HIGH | HIGH | **P0** |
 | T-7 | Fork/PR contributor data leakage | I | MEDIUM | HIGH | **P0** |
 | T-3 | Plaid credential exposure | I/S | LOW | CRITICAL | P1 |
-| T-5 | LLM inference data leakage to Anthropic | I | MEDIUM | MEDIUM | P1 |
+| T-5 | LLM inference data leakage to provider | I | MEDIUM | MEDIUM | P1 |
 | T-8 | File permissions inconsistency | I | LOW | MEDIUM | P1 |
+| T-11 | Prompt injection via transaction data | T/E | LOW | HIGH | P1 |
+| T-12 | Session logs persist financial data (all runtimes) | I | MEDIUM | HIGH | P1 |
+| T-13 | Multi-hop provider routing (OpenRouter) | I | MEDIUM | HIGH | P1 |
+| T-14 | Agent config files as cross-runtime attack vector | T/E | MEDIUM | CRITICAL | P1 |
 | T-4 | SQLite data at rest (unencrypted) | I | LOW | HIGH | P2 |
 | T-6 | Supply chain (Plaid CLI binary) | T/E | LOW | CRITICAL | P2 |
 | T-9 | Memory files with financial profiles | I | LOW | HIGH | P2 |
-| T-11 | Prompt injection via transaction data | T/E | LOW | HIGH | P1 |
+| T-15 | Hermes trajectory capture (training pipeline) | I | LOW | HIGH | P2 |
 | T-10 | Database corruption/DoS | D/T | LOW | MEDIUM | P2 |
 
 ---
@@ -393,6 +486,29 @@ The following are documented risk acceptances for this project's threat profile:
 | Data sent to LLM provider | This is the core value proposition of the tool. Users accept this tradeoff for AI-powered financial analysis. Mitigated by user choice: commercial API (7-day retention), ZDR (0 days), or local model (zero exposure). Documented in README. |
 | Single-user permissions model | The tool targets single-user developer machines. Multi-user access control is out of scope. |
 | Plaid CLI as trusted binary | First-party dependency from a well-funded fintech company. Acceptable trust delegation. |
+| Unencrypted session logs | Universal across all supported runtimes (none encrypt at rest). Same mitigation as database: rely on full-disk encryption. Recommend aggressive retention (7 days). |
+| Agent has full filesystem access | All supported runtimes (Claude Code, Hermes, Gemini CLI, Cursor) execute with user-level permissions by default. Sandboxing is opt-in and would break skill functionality. Accepted, with prompt injection mitigations as defense-in-depth. |
+
+---
+
+## Runtime-Specific Security Notes
+
+When choosing an agent runtime to use with this project, consider:
+
+| Runtime | Session Retention | Provider Routing | Approval Model | Injection Defense |
+|---------|------------------|-----------------|----------------|-------------------|
+| **Claude Code** | 30 days (configurable) | Direct to Anthropic | Per-action approval | Built-in detection |
+| **Hermes Agent** | 90 days (configurable) | Via OpenRouter by default (double-hop) | Manual/Smart/Off modes | Context file scanning, regex patterns |
+| **Gemini CLI** | Indefinite | Direct to Google | Plan mode (read-only default) | Conseca (LLM-on-LLM) |
+| **Cursor** | Indefinite | Configurable | Per-command approval | Limited |
+| **Ollama (local)** | None (no cloud) | None — fully local | N/A | None needed (no network) |
+
+**Recommended configuration for financial data:**
+- Use direct provider connections (not aggregators like OpenRouter)
+- Set session retention to 7 days maximum
+- Keep approval mode on (never use YOLO/auto-run)
+- If using Hermes, set `agent.save_trajectories: false` explicitly
+- Prefer Ollama for maximum privacy (tradeoff: reduced capability)
 
 ---
 
@@ -404,3 +520,6 @@ This threat model should be revisited when:
 - New data sources are connected (additional financial institutions)
 - The tool gains multi-user or shared-machine features
 - A security incident occurs in any dependency (Plaid, Anthropic, Homebrew)
+- A new agent runtime is added to the supported list
+- A CVE is published affecting any supported agent runtime
+- The Agent Skills standard adds security features (signing, RBAC, sandboxing)
