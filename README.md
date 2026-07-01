@@ -19,7 +19,7 @@ Advisor: walks your actual balances and rates through a priority framework,
 
 ## Prerequisites
 
-macOS or Linux (Windows via WSL) · Python 3.8+ · SQLite 3 · [Homebrew](https://brew.sh) · An [agent runtime](#connect-your-agent)
+macOS or Linux (Windows via WSL) · Python 3.8+ · SQLite 3 · [Homebrew](https://brew.sh) · An [Agent Skills-compatible runtime](https://agentskills.io/clients)
 
 <details>
 <summary>Verify your setup</summary>
