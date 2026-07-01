@@ -12,6 +12,12 @@ reports/
 CLAUDE.local.md
 *.local.md
 
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
 # OS
 .DS_Store
 
