@@ -1,0 +1,54 @@
+{
+  "name": "fiduciary",
+  "description": "Local-first personal finance advisor — Plaid CLI + SQLite + LLM agent skills",
+  "version": "1.0.0",
+  "author": "weklund",
+  "repository": "https://github.com/weklund/fiduciary",
+  "license": "MIT",
+  "requires": {
+    "bins": ["python3", "sqlite3", "plaid"],
+    "setup": "See README.md for Plaid CLI setup and first sync"
+  },
+  "skills": [
+    {
+      "name": "finance-query",
+      "path": ".claude/skills/finance-query/SKILL.md",
+      "description": "Answer questions about personal finances — balances, transactions, spending patterns, account status, recent purchases, merchant history, income tracking."
+    },
+    {
+      "name": "health-check",
+      "path": ".claude/skills/health-check/SKILL.md",
+      "description": "Quarterly financial health assessment. Compares current state against goals, checks key ratios, identifies which layer of the financial pyramid needs attention, and produces a prioritized action plan."
+    },
+    {
+      "name": "next-dollar",
+      "path": ".claude/skills/next-dollar/SKILL.md",
+      "description": "Answer 'what should I do with my next dollar?' Apply the financial order of operations to the user's actual situation."
+    },
+    {
+      "name": "onboard",
+      "path": ".claude/skills/onboard/SKILL.md",
+      "description": "Financial advisor intake. Conducts a structured interview modeled on the CFP Board's 7-step process and writes personalized context to memory files."
+    },
+    {
+      "name": "spending-audit",
+      "path": ".claude/skills/spending-audit/SKILL.md",
+      "description": "Audit spending for waste, unused subscriptions, and overspending by category."
+    },
+    {
+      "name": "sync-data",
+      "path": ".claude/skills/sync-data/SKILL.md",
+      "description": "Sync fresh financial data from Plaid. Pull latest transactions, update balances, rebuild the local database."
+    },
+    {
+      "name": "tactics",
+      "path": ".claude/skills/tactics/SKILL.md",
+      "description": "Optimize HOW you execute financial strategies with your specific accounts, cards, and tools. Reward maximization, balance transfers, fee elimination."
+    },
+    {
+      "name": "weekly-report",
+      "path": ".claude/skills/weekly-report/SKILL.md",
+      "description": "Generate a weekly personal finance report — spending summary, budget status, anomalies."
+    }
+  ]
+}
