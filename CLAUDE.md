@@ -121,7 +121,7 @@ If fixed costs exceed 60%, something structural must change (housing, debt load,
 ```bash
 bash scripts/sync.sh                      # sync from Plaid + rebuild DB
 python3 scripts/ingest.py                 # rebuild DB from all sources (no Plaid call)
-python3 scripts/parse-statements.py       # find HSA-eligible expenses in CSVs
+python3 scripts/ingest.py --help           # see ingestion options
 sqlite3 data/finance.db "SELECT ..."      # direct query
 ```
 

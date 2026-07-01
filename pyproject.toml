@@ -1,0 +1,41 @@
+[project]
+name = "fiduciary"
+requires-python = ">=3.8"
+
+[tool.ruff]
+target-version = "py38"
+line-length = 100
+src = ["scripts", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "F",      # Pyflakes — unused imports, undefined names, dead code
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "I",      # isort — import ordering
+    "N",      # pep8-naming
+    "B",      # flake8-bugbear — common pitfalls
+    "C4",     # flake8-comprehensions
+    "C90",    # McCabe complexity
+    "S",      # flake8-bandit — security
+    "UP",     # pyupgrade — modernize syntax
+    "SIM",    # flake8-simplify
+    "PERF",   # Perflint — performance anti-patterns
+    "RUF",    # Ruff-specific rules
+]
+ignore = [
+    "E501",     # line length handled by formatter
+    "PERF203",  # try-except in loop is intentional for row-level error handling
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S106"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
