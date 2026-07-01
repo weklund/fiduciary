@@ -121,8 +121,8 @@ Your financial data never touches a git-tracked file. The only external calls ar
 | Document | What it covers |
 |----------|---------------|
 | [docs/PRIVACY.md](docs/PRIVACY.md) | Provider comparison, session logs, retention settings, credentials |
-| [design/THREAT-MODEL.md](design/THREAT-MODEL.md) | Full STRIDE threat analysis — 15 threats, mitigations, accepted risks, runtime comparison |
-| [design/HLD-Fiduciary.md](design/HLD-Fiduciary.md) | System architecture, trust boundaries, data classification |
+| [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md) | Full STRIDE threat analysis — 15 threats, mitigations, accepted risks, runtime comparison |
+| [docs/HLD-Fiduciary.md](docs/HLD-Fiduciary.md) | System architecture, trust boundaries, data classification |
 
 <details>
 <summary><strong>Connecting additional banks</strong></summary>
