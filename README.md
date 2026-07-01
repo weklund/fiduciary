@@ -3,56 +3,30 @@
 [![Agent Skills](https://skills.sh/b/weklund/fiduciary)](https://skills.sh/weklund/fiduciary)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-A personal financial advisor that runs locally on your machine. Connects to your bank accounts via Plaid, stores everything in a local SQLite database, and uses Claude Code as a conversational advisor — grounded in your real transaction data, not generic platitudes.
+A local-first personal finance advisor. Connects to your bank accounts, stores everything in SQLite on your machine, and uses an LLM agent as a conversational advisor — grounded in your real data, not generic platitudes.
 
-Built on the CFP Board's fiduciary planning process. No data leaves your machine. No subscriptions. No product recommendations. Just you, your data, and an advisor that works in your interest.
+> [!NOTE]
+> **All data stays on your machine.** No cloud storage. No telemetry. No product recommendations. See [docs/PRIVACY.md](docs/PRIVACY.md) for full details.
 
 ```
 You: "What did I spend on dining this month?"
 Advisor: queries your local DB, shows the answer with merchants and totals
 
 You: "Should I pay off my credit card or keep cash reserves?"
-Advisor: looks at your actual balances, rates, income stability — gives a personalized recommendation with the math
+Advisor: walks your actual balances and rates through a priority framework,
+         accounts for your constraints, gives a specific recommendation with the math
 ```
 
-## What This Is
-
-- **Plaid CLI** pulls live transactions from your bank accounts
-- **SQLite** stores everything locally in a single unified ledger
-- **Claude Code skills** provide conversational access to your finances
-- **Advisory frameworks** (encoded in CLAUDE.md) ensure recommendations follow evidence-based financial planning principles
-
-It's not an app. It's a toolkit that turns Claude Code into a fiduciary financial advisor with access to your actual data.
-
-Skills follow the [Agent Skills open standard](https://agentskills.io) — also compatible with Hermes Agent, Gemini CLI, Cursor, GitHub Copilot, and 42+ other tools.
-
-## Setup (~10 minutes)
-
-### Prerequisites
-
-- macOS or Linux (Windows via WSL)
-- Python 3.8+
-- [Homebrew](https://brew.sh) (for Plaid CLI)
-- One of:
-  - [Claude Code](https://claude.ai/code) installed and authenticated, OR
-  - [Hermes Agent](https://github.com/NousResearch/hermes-agent) installed, OR
-  - Any [Agent Skills-compatible](https://agentskills.io/clients) tool
-
-### 1. Clone and enter the project
+## Quick Start
 
 ```bash
-git clone https://github.com/weklund/fiduciary.git
-cd fiduciary
-git config core.hooksPath .githooks   # install safety hooks (blocks accidental data commits)
-```
-
-### 2. Install and configure Plaid CLI
-
-```bash
+git clone https://github.com/weklund/fiduciary.git && cd fiduciary
+git config core.hooksPath .githooks
 brew install plaid/plaid-cli/plaid
 ```
 
-If this is your first time using Plaid, you'll need a free account:
+<details>
+<summary><strong>First-time Plaid setup</strong> (free account required)</summary>
 
 ```bash
 plaid register     # opens browser — create a free Plaid developer account
@@ -61,95 +35,50 @@ plaid login        # authenticate the CLI (opens browser for OAuth)
 plaid keys fetch   # download your API keys
 ```
 
-The Trial plan is free for personal use (up to 10 linked institutions). Select
-"Personal use" / "building something for fun" on the application.
+The Trial plan is free for personal use (up to 10 linked institutions).
 
-### 3. Connect your bank accounts
-
-```bash
-plaid link --products transactions,liabilities,investments
-```
-
-This opens **Plaid Link** in your browser. You'll:
-1. Search for your bank (Chase, Amex, Capital One, etc.)
-2. Authenticate via your bank's OAuth flow (redirects to your bank's login page)
-3. Handle MFA if prompted (SMS code, authenticator, etc.)
-4. Select which accounts to connect
-5. Return to the terminal — the CLI saves the access token automatically
-
-**To add more banks**, run `plaid link` again for each institution:
+</details>
 
 ```bash
-plaid link --products transactions              # checking/savings only
-plaid link --products transactions,investments  # brokerage accounts
+plaid link --products transactions,liabilities,investments   # connect your bank (opens browser)
+bash scripts/sync.sh                                         # pull data + build local DB
 ```
 
-**Verify your connections:**
+<details>
+<summary><strong>Connect your agent</strong></summary>
 
+**Claude Code** — open Claude Code in this directory. Skills auto-discover.
+
+**Hermes Agent:**
 ```bash
-plaid item list      # list all linked institutions
-plaid balance --all  # test that balances come back
-```
-
-**Common issues:**
-- **Bank not found?** Most major US banks are supported. Some smaller credit unions/fintechs may not be in Plaid's network.
-- **`ITEM_LOGIN_REQUIRED` error?** Your bank session expired (password change, MFA expiry). Re-run `plaid link` to re-authenticate.
-- **10-institution limit:** The free Trial allows 10 linked institutions. This is more than enough for most personal finance setups.
-
-### 4. First sync
-
-```bash
-bash scripts/sync.sh
-```
-
-This pulls transactions from Plaid and builds the SQLite database at `data/finance.db`.
-
-### 4. Connect your agent
-
-#### Option A: Claude Code
-
-Open Claude Code in this directory. Skills are auto-discovered from `.claude/skills/`.
-
-```
-/onboard
-```
-
-This conducts a financial advisor intake — asks about your goals, situation, risk tolerance, and concerns — then writes a personalized context file so all future advice is tailored to you.
-
-#### Option B: Hermes Agent
-
-Point Hermes at this directory and install the skills:
-
-```bash
-# Copy advisory frameworks to Hermes persona
 cp CLAUDE.md ~/.hermes/SOUL.md
-
-# Install skills (Hermes reads the Agent Skills format directly)
-hermes skills add ./\.claude/skills/onboard
-hermes skills add ./\.claude/skills/finance-query
-hermes skills add ./\.claude/skills/spending-audit
-hermes skills add ./\.claude/skills/weekly-report
-hermes skills add ./\.claude/skills/sync-data
+hermes skills add ./.claude/skills/*
 ```
 
-Then run the intake:
+**Other tools** — any [Agent Skills-compatible](https://agentskills.io/clients) runtime works (Gemini CLI, Cursor, GitHub Copilot, 42+ others).
+
+</details>
+
+Then run the advisor intake:
 
 ```
 /onboard
 ```
 
-Hermes stores your profile in `~/.hermes/USER.md` and `~/.hermes/MEMORY.md` instead of Claude Code's memory system. The skills work the same way.
+This asks about your goals, situation, and risk tolerance — then writes a personalized profile so all future advice is tailored to you.
 
-### 5. Start asking questions
+## Skills
 
-Works the same in both agents:
-
-```
-"What are my biggest expenses this month?"
-"How much am I spending on subscriptions?"
-"Should I pay off this card or build savings first?"
-"Give me a weekly spending report"
-```
+| Command | What it does |
+|---------|-------------|
+| `/onboard` | Financial advisor intake — sets up your personalized profile |
+| `/sync-data` | Pull fresh transactions from Plaid |
+| `/finance-query` | Ask any question about your finances |
+| `/next-dollar` | "What should I do with $X?" — applies order of operations to YOUR situation |
+| `/health-check` | Quarterly full assessment — pyramid status, ratios, action plan |
+| `/tactics` | Optimize your cards, accounts, and tools |
+| `/spending-audit` | Find waste, unused subscriptions, overspending |
+| `/weekly-report` | Generate a weekly spending summary |
 
 ## How It Works
 
@@ -161,224 +90,97 @@ Works the same in both agents:
                     └──────┬───────┘     └─────────────────┘
                            │
                     ┌──────▼───────┐
-                    │  Claude Code │
+                    │  LLM Agent   │
                     │  (skills +   │
                     │   CLAUDE.md  │
                     │   frameworks)│
                     └──────────────┘
 ```
 
-**Your data never leaves your machine.** Plaid CLI runs locally. The database is local. Claude Code reads the DB directly. Nothing is uploaded, shared, or transmitted to third parties beyond what Plaid requires to authenticate with your bank.
-
-## Skills (Slash Commands)
-
-| Command | What it does |
-|---------|-------------|
-| `/onboard` | Financial advisor intake — sets up your personalized profile |
-| `/sync-data` | Pull fresh transactions from Plaid |
-| `/finance-query` | Ask any question about your finances (auto-triggered) |
-| `/next-dollar` | "What should I do with $X?" — applies order of operations to YOUR situation |
-| `/health-check` | Quarterly full assessment — pyramid status, ratios, goal progress, action plan |
-| `/tactics` | Optimize your cards, accounts, and tools — reward maximization, balance transfers, fee elimination |
-| `/spending-audit` | Find waste, unused subscriptions, overspending |
-| `/weekly-report` | Generate a weekly spending summary |
+The advisory logic is built on the CFP Board's fiduciary planning process — a layered pyramid where you never optimize a higher layer while a lower one is unstable. See [docs/ADVISORY.md](docs/ADVISORY.md) for the full framework.
 
 ## Adding Historical Data
 
-Plaid gives you ~30 days of history. For deeper analysis, add bank statement CSVs:
+Plaid gives ~30 days. For deeper analysis, add bank CSVs:
 
-1. Download CSV from your bank's website (Activity → Download → CSV)
-2. Drop into `data/statements/`
-3. Run `python3 scripts/ingest.py`
-
-Supported formats: Amex, Chase, Capital One, or any CSV with `Date,Description,Amount` columns.
-
-## How It Thinks
-
-A certified financial planner doesn't just look at your bank balance and tell you to save more. The CFP Board mandates a 7-step process that starts with understanding your complete situation — circumstances, values, behavioral patterns — before ever making a recommendation. Generic advice violates the fiduciary duty of care.
-
-This system encodes that process. When you run `/onboard`, it conducts the same structured intake a $400/hour advisor would: who are you, what does money mean to you, what are you building toward, how do you behave under stress. When you ask `/next-dollar`, it doesn't just say "pay off debt" — it walks your actual balances and rates through a priority hierarchy, checks your constraints ("never touch the emergency fund"), and accounts for your behavioral profile ("you said you tend to freeze under pressure, so here's one simple action, not five").
-
-The framework underneath is the **Financial Planning Pyramid** — a layered model where you never optimize a higher layer while a lower one is unstable:
-
-```
-Layer 5: LEGACY         — Estate planning, wealth transfer
-Layer 4: FREEDOM        — Aspirational goals, early retirement
-Layer 3: ACCUMULATION   — Investing, retirement, goal funding
-Layer 2: SAFETY         — Emergency fund, insurance, stable cash flow
-Layer 1: PROTECTION     — Expenses covered, high-interest debt managed, no fees bleeding
+```bash
+# Drop CSVs into data/statements/, then:
+python3 scripts/ingest.py
 ```
 
-Every recommendation maps to a layer. If your Layer 1 is unstable (late fees hitting, no autopay, high-interest debt growing), the system won't suggest optimizing your 401(k) allocation. It fixes the foundation first.
-
-On top of the pyramid sits the **Order of Operations** — a decision tree for "what to do with the next dollar." It's not a budget. It's a priority sequence: capture the employer match (instant 50-100% return) before paying 7% debt, pay 7% debt before building an emergency fund beyond the starter cushion, and so on. The math is the math — but the system also knows when to deviate (carry debt during an income transition because runway > optimization).
-
-The behavioral layer is what separates this from a spreadsheet. The system tracks whether you prefer automation or control, whether you panic-sell or freeze, whether you overspend on things or experiences. It uses that to frame recommendations in ways that actually stick — because the best financial plan is the one you'll follow, not the one that's mathematically optimal on paper.
-
-### Frameworks Encoded
-
-- **Financial Planning Pyramid** — prioritize protection → safety → accumulation → freedom → legacy
-- **Order of Operations** — what to do with the next dollar (employer match → high-interest debt → emergency fund → HSA → Roth → 401k → ...)
-- **Decision Rules** — when to pay debt vs. invest, emergency fund sizing, tax-advantaged account priority
-- **Behavioral Finance** — automate over willpower, loss aversion framing, pre-commitment devices
-- **Conscious Spending Framework** — fixed costs <60%, investments 15-20%, guilt-free spending 20-35%
-
-These aren't opinions — they're synthesized from CFP Board standards, the fiduciary duty of care, and decades of evidence-based personal finance research.
+Supports: Amex, Chase, Capital One, or any CSV with `Date,Description,Amount` columns.
 
 ## Privacy & Security
 
-### What stays local
+Your financial data never touches a git-tracked file. The only external calls are to Plaid (for sync) and your chosen LLM provider (for analysis).
 
-- **All financial data is local.** `data/` is gitignored. Nothing financial is ever committed.
-- **Your profile stays on your machine.** `/onboard` writes exclusively to Claude Code's local memory system (`~/.claude/projects/`), never to git-tracked files.
-- **No API keys in the repo.** Plaid CLI handles authentication separately in `~/.plaid/`.
-- **No tracking, no analytics, no telemetry.** This is a local tool, not a service.
-- **Pre-commit hook** blocks accidental commits of financial data. Install with:
-  ```bash
-  git config core.hooksPath .githooks
-  ```
+**Recommended:** Commercial API key (7-day retention, no training). **Zero-trust:** Ollama locally (nothing leaves your machine).
 
-### What leaves your machine
+Full details: **[docs/PRIVACY.md](docs/PRIVACY.md)** — provider comparison table, session log locations, retention settings, credential management.
 
-When you ask questions about your finances, transaction data from your local database is
-sent to your LLM provider for analysis. Choose your configuration carefully:
+<details>
+<summary><strong>Connecting additional banks</strong></summary>
 
-| Configuration | Recommended? | Server retention | Training | Notes |
-|---|---|---|---|---|
-| **API key (Commercial)** | Yes | 7 days | Never | Best balance of capability + privacy |
-| **API key + ZDR** | Best cloud option | 0 days | Never | Request from Anthropic account team |
-| **Local LLM (Ollama)** | Best privacy | 0 — never leaves device | Never | Reduced capability, no tool use |
-| Enterprise + ZDR | Yes (orgs) | 0 days | Never | Admin controls, SOC 2, ISO 27001 |
-| Consumer Pro/Max (opt-out) | No | 30 days | No | Potential human review for safety |
-| Consumer Pro/Max (opt-in) | **Do not use** | 5 years | **Yes** | Your financial data trains the model |
+Run `plaid link` again for each institution:
 
-**Recommended setup:** Use a pay-as-you-go API key from an Anthropic Commercial
-organization (`ANTHROPIC_API_KEY`). Under commercial terms, your data is retained for
-7 days, encrypted at rest (AES-256), and contractually excluded from model training.
-
-**Zero-trust option:** Use a local model via Ollama or llama.cpp. Nothing leaves your
-machine. Set your API endpoint to your local server — the SQLite queries and skill logic
-still work, only the LLM backend changes. Tradeoff: significantly reduced analysis quality.
-
-**Important caveats:**
-- Even under ZDR, sessions flagged for policy violations may be retained up to 2 years
-- Claude Code stores local session transcripts in plaintext at `~/.claude/projects/` for 30 days (adjust via `cleanupPeriodDays` in settings)
-- Certain models (Fable 5, Mythos 5) require 30-day retention and cannot use ZDR
-- Claude Code is excluded from Anthropic's HIPAA BAA regardless of plan
-
-**Policy links:**
-[Commercial Data Retention](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data) |
-[API Retention Docs](https://platform.claude.com/docs/en/manage-claude/api-and-data-retention) |
-[Claude Code Data Usage](https://code.claude.com/docs/en/data-usage) |
-[ZDR Documentation](https://code.claude.com/docs/en/zero-data-retention) |
-[Trust Center](https://trust.anthropic.com/)
-
-### Local session logs
-
-Every agent runtime stores conversation history (including your financial query results)
-in plaintext on your machine. **These are not encrypted at rest.**
-
-| Runtime | Location | Default Retention | Recommended Setting |
-|---------|----------|-------------------|---------------------|
-| Claude Code | `~/.claude/projects/` | 30 days | `cleanupPeriodDays: 7` |
-| Hermes Agent | `~/.hermes/state.db` | 90 days | `sessions.retention_days: 7` + `auto_prune: true` |
-| Gemini CLI | `~/.gemini/tmp/` | Indefinite | Periodically clear manually |
-| Cursor | `~/Library/Application Support/Cursor/` | Indefinite | Periodically clear manually |
-
-**Exclude these paths from cloud backup/sync** (iCloud, Dropbox, OneDrive, Time Machine):
 ```bash
-# macOS: exclude from Time Machine
-tmutil addexclusion ~/.claude/projects/
-tmutil addexclusion ~/.hermes/state.db
+plaid link --products transactions              # checking/savings only
+plaid link --products transactions,investments  # brokerage accounts
 ```
 
-**If using Hermes Agent with model aggregators** (OpenRouter is the default): your data
-passes through the aggregator AND the underlying model provider. For financial data,
-use a direct provider connection instead:
-```yaml
-# ~/.hermes/config.yaml — recommended for financial workloads
-model:
-  provider: anthropic    # or: ollama (for local)
-  default: claude-sonnet-5
+Verify connections:
+```bash
+plaid item list      # list all linked institutions
+plaid balance --all  # test that balances come back
 ```
 
-Also ensure trajectory capture is off: `agent.save_trajectories: false`
+**Common issues:**
+- **Bank not found?** Most major US banks are supported. Some smaller credit unions may not be in Plaid's network.
+- **`ITEM_LOGIN_REQUIRED`?** Bank session expired. Re-run `plaid link` to re-authenticate.
+- **10-institution limit:** The free Trial allows 10 linked institutions.
 
-### Credential security
+</details>
 
-- **Plaid tokens** live in `~/.plaid/` — exclude from dotfile repos, cloud sync (iCloud/Dropbox), and machine migration scripts
-- **LLM API keys** — set as env var, never in project files
-- **Disk encryption** (FileVault/LUKS) is your primary data-at-rest protection. The SQLite database is unencrypted by design (simplicity tradeoff for a local tool)
+<details>
+<summary><strong>Updating your profile</strong></summary>
 
-*Last verified: June 2026. Policies change — check the links above for current terms.*
+Run `/onboard` again anytime your situation changes:
+- New job or lost income
+- Major life event (marriage, kids, inheritance)
+- Goals or priorities shift
+- Want to add accounts or update metrics
 
-## Project Structure
+The skill detects existing context and offers to update rather than start fresh.
+
+</details>
+
+<details>
+<summary><strong>Project structure</strong></summary>
 
 ```
-CLAUDE.md              ← Advisory frameworks + project conventions (committed)
+CLAUDE.md              ← Advisory frameworks (committed, no PII)
 scripts/
   sync.sh              ← Pull from Plaid + rebuild DB
-  ingest.py            ← Rebuild DB from all sources (Plaid snapshots + CSVs)
-  parse-statements.py  ← Find HSA-eligible expenses in CSVs
-.claude/skills/        ← Conversational finance skills
-  onboard/             ← First-time intake interview
-  finance-query/       ← Query your finances
-  next-dollar/         ← "Where should my next $X go?"
-  health-check/        ← Quarterly full financial assessment
-  tactics/             ← Card/account optimization with deep research
-  sync-data/           ← Sync fresh data
-  spending-audit/      ← Find waste and subscriptions
-  weekly-report/       ← Weekly spending summary
-data/                  ← (gitignored) Your financial data
-  finance.db           ← Unified SQLite ledger
-  snapshots/           ← Raw Plaid JSON responses
-  statements/          ← Bank CSVs for historical backfill
-  latest/              ← Most recent Plaid snapshot
-reports/               ← (gitignored) Generated dashboards and reports
+  ingest.py            ← Rebuild DB from all sources
+.claude/skills/        ← Conversational finance skills (8 skills)
+data/                  ← (gitignored) Financial data + SQLite DB
+reports/               ← (gitignored) Generated reports
+docs/                  ← Deep documentation
+  ADVISORY.md          ← How the advisory logic works
+  PRIVACY.md           ← Data retention + provider comparison
 ```
 
-## Updating Your Profile
-
-Life changes. Run `/onboard` again anytime:
-- You get a new job or lose one
-- Income changes significantly
-- Major life event (marriage, kids, divorce, inheritance)
-- Your goals or priorities shift
-- You want to add accounts or update metrics
-
-The skill detects existing context and offers to update rather than start from scratch.
+</details>
 
 ## Philosophy
 
 > Track everything. Automate the boring stuff. Spend deliberately on what builds the future. Cut ruthlessly what doesn't.
 
-This tool exists because:
-1. Most financial apps sell you products or harvest your data
-2. Generic advice ("save more, spend less") doesn't account for YOUR situation
-3. A fiduciary advisor costs $200-400/hour and meets quarterly at best
-4. Your bank has the data — you should too, queryable, on your terms
-
-## Works With
-
-Built for [Claude Code](https://claude.ai/code). Also compatible with any tool supporting the [Agent Skills standard](https://agentskills.io):
-
-- Hermes Agent (NousResearch)
-- Gemini CLI
-- Cursor
-- GitHub Copilot
-- OpenAI Codex
-- JetBrains Junie
-- [42+ others](https://agentskills.io/clients)
+This tool exists because most financial apps sell you products or harvest your data, generic advice doesn't account for YOUR situation, a fiduciary advisor costs $200-400/hour, and your bank has the data — you should too, queryable, on your terms.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines. Issues and PRs welcome.
-
-Good first contributions:
-- Add CSV parsers for new banks (see `scripts/ingest.py`)
-- Improve category detection in spending-audit
-- Add new advisory frameworks to CLAUDE.md
-- Write new skills for specific financial planning tasks
+See [CONTRIBUTING.md](CONTRIBUTING.md). Good first contributions: CSV parsers for new banks, new advisory skills, improved category detection.
 
 ## License
 
