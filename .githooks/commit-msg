@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Commit message hook: enforces conventional commit format.
+#
+# Format: type(scope): description
+#   or:   type: description
+#
+# Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, security
+#
+# Install with: git config core.hooksPath .githooks
+# Override with: git commit --no-verify
+
+set -euo pipefail
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(head -1 "$COMMIT_MSG_FILE")
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+# Allow merge commits and fixup/squash
+if echo "$COMMIT_MSG" | grep -qE "^(Merge|fixup!|squash!)"; then
+  exit 0
+fi
+
+# Conventional commit pattern: type(optional-scope): description
+PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|security)(\(.+\))?: .+"
+
+if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+  echo -e "${RED}ERROR: Commit message does not follow conventional commit format.${NC}" >&2
+  echo "" >&2
+  echo "  Expected: type(scope): description" >&2
+  echo "  Example:  feat(skills): add balance transfer optimizer" >&2
+  echo "  Example:  fix: correct date parsing for Capital One CSVs" >&2
+  echo "  Example:  docs: update privacy section with ZDR details" >&2
+  echo "" >&2
+  echo "  Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, security" >&2
+  echo "" >&2
+  echo -e "  Your message: ${GREEN}${COMMIT_MSG}${NC}" >&2
+  echo "" >&2
+  echo "  Override with: git commit --no-verify" >&2
+  exit 1
+fi
+
+exit 0
