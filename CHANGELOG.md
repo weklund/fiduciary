@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/weklund/fiduciary/compare/v1.0.0...v1.0.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* **ci:** use astral-sh/ruff-action@v3 (v4 does not exist) ([1e7b492](https://github.com/weklund/fiduciary/commit/1e7b49210a7457641463b570d833759f7a04097c))
+
 ## 1.0.0 (2026-07-01)
 
 
