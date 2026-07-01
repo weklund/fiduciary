@@ -112,11 +112,17 @@ Supports: Amex, Chase, Capital One, or any CSV with `Date,Description,Amount` co
 
 ## Privacy & Security
 
+This project handles your most sensitive data. We believe you deserve full transparency about what happens with it — not just marketing claims, but a published threat model you can read and challenge.
+
 Your financial data never touches a git-tracked file. The only external calls are to Plaid (for sync) and your chosen LLM provider (for analysis).
 
 **Recommended:** Commercial API key (7-day retention, no training). **Zero-trust:** Ollama locally (nothing leaves your machine).
 
-Full details: **[docs/PRIVACY.md](docs/PRIVACY.md)** — provider comparison table, session log locations, retention settings, credential management.
+| Document | What it covers |
+|----------|---------------|
+| [docs/PRIVACY.md](docs/PRIVACY.md) | Provider comparison, session logs, retention settings, credentials |
+| [design/THREAT-MODEL.md](design/THREAT-MODEL.md) | Full STRIDE threat analysis — 15 threats, mitigations, accepted risks, runtime comparison |
+| [design/HLD-Fiduciary.md](design/HLD-Fiduciary.md) | System architecture, trust boundaries, data classification |
 
 <details>
 <summary><strong>Connecting additional banks</strong></summary>
