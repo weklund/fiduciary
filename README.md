@@ -26,32 +26,77 @@ It's not an app. It's a toolkit that turns Claude Code into a fiduciary financia
 
 Skills follow the [Agent Skills open standard](https://agentskills.io) — also compatible with Hermes Agent, Gemini CLI, Cursor, GitHub Copilot, and 42+ other tools.
 
-## Setup (5 minutes)
+## Setup (~10 minutes)
 
 ### Prerequisites
 
 - macOS or Linux (Windows via WSL)
 - Python 3.8+
+- [Homebrew](https://brew.sh) (for Plaid CLI)
 - One of:
   - [Claude Code](https://claude.ai/code) installed and authenticated, OR
-  - [Hermes Agent](https://github.com/NousResearch/hermes-agent) installed
+  - [Hermes Agent](https://github.com/NousResearch/hermes-agent) installed, OR
+  - Any [Agent Skills-compatible](https://agentskills.io/clients) tool
 
 ### 1. Clone and enter the project
 
 ```bash
 git clone https://github.com/weklund/fiduciary.git
 cd fiduciary
+git config core.hooksPath .githooks   # install safety hooks (blocks accidental data commits)
 ```
 
-### 2. Install Plaid CLI
+### 2. Install and configure Plaid CLI
 
 ```bash
 brew install plaid/plaid-cli/plaid
-plaid login
-plaid link    # connects your bank accounts — runs locally, data stays on your machine
 ```
 
-### 3. First sync
+If this is your first time using Plaid, you'll need a free account:
+
+```bash
+plaid register     # opens browser — create a free Plaid developer account
+plaid trial        # apply for the free Trial plan (auto-approved in ~60 seconds)
+plaid login        # authenticate the CLI (opens browser for OAuth)
+plaid keys fetch   # download your API keys
+```
+
+The Trial plan is free for personal use (up to 10 linked institutions). Select
+"Personal use" / "building something for fun" on the application.
+
+### 3. Connect your bank accounts
+
+```bash
+plaid link --products transactions,liabilities,investments
+```
+
+This opens **Plaid Link** in your browser. You'll:
+1. Search for your bank (Chase, Amex, Capital One, etc.)
+2. Authenticate via your bank's OAuth flow (redirects to your bank's login page)
+3. Handle MFA if prompted (SMS code, authenticator, etc.)
+4. Select which accounts to connect
+5. Return to the terminal — the CLI saves the access token automatically
+
+**To add more banks**, run `plaid link` again for each institution:
+
+```bash
+plaid link --products transactions              # checking/savings only
+plaid link --products transactions,investments  # brokerage accounts
+```
+
+**Verify your connections:**
+
+```bash
+plaid item list      # list all linked institutions
+plaid balance --all  # test that balances come back
+```
+
+**Common issues:**
+- **Bank not found?** Most major US banks are supported. Some smaller credit unions/fintechs may not be in Plaid's network.
+- **`ITEM_LOGIN_REQUIRED` error?** Your bank session expired (password change, MFA expiry). Re-run `plaid link` to re-authenticate.
+- **10-institution limit:** The free Trial allows 10 linked institutions. This is more than enough for most personal finance setups.
+
+### 4. First sync
 
 ```bash
 bash scripts/sync.sh
