@@ -253,10 +253,17 @@ def ingest_accounts(conn):
 
 
 def main():
+    os.umask(0o077)
     os.makedirs(DB_PATH.parent, exist_ok=True)
 
     conn = sqlite3.connect(DB_PATH)
     conn.execute("PRAGMA journal_mode=WAL")
+
+    result = conn.execute("PRAGMA integrity_check").fetchone()
+    if result[0] != "ok":
+        print(f"WARNING: Database integrity check failed: {result[0]}")
+        print("Consider deleting data/finance.db and re-running this script to rebuild.")
+
     init_db(conn)
 
     total_inserted = 0
@@ -305,6 +312,9 @@ def main():
     print(f"New this run: {total_inserted}")
 
     conn.close()
+
+    import stat
+    os.chmod(DB_PATH, stat.S_IRUSR | stat.S_IWUSR)
 
 
 if __name__ == "__main__":

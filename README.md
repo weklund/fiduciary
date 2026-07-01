@@ -228,10 +228,41 @@ still work, only the LLM backend changes. Tradeoff: significantly reduced analys
 [ZDR Documentation](https://code.claude.com/docs/en/zero-data-retention) |
 [Trust Center](https://trust.anthropic.com/)
 
+### Local session logs
+
+Every agent runtime stores conversation history (including your financial query results)
+in plaintext on your machine. **These are not encrypted at rest.**
+
+| Runtime | Location | Default Retention | Recommended Setting |
+|---------|----------|-------------------|---------------------|
+| Claude Code | `~/.claude/projects/` | 30 days | `cleanupPeriodDays: 7` |
+| Hermes Agent | `~/.hermes/state.db` | 90 days | `sessions.retention_days: 7` + `auto_prune: true` |
+| Gemini CLI | `~/.gemini/tmp/` | Indefinite | Periodically clear manually |
+| Cursor | `~/Library/Application Support/Cursor/` | Indefinite | Periodically clear manually |
+
+**Exclude these paths from cloud backup/sync** (iCloud, Dropbox, OneDrive, Time Machine):
+```bash
+# macOS: exclude from Time Machine
+tmutil addexclusion ~/.claude/projects/
+tmutil addexclusion ~/.hermes/state.db
+```
+
+**If using Hermes Agent with model aggregators** (OpenRouter is the default): your data
+passes through the aggregator AND the underlying model provider. For financial data,
+use a direct provider connection instead:
+```yaml
+# ~/.hermes/config.yaml — recommended for financial workloads
+model:
+  provider: anthropic    # or: ollama (for local)
+  default: claude-sonnet-5
+```
+
+Also ensure trajectory capture is off: `agent.save_trajectories: false`
+
 ### Credential security
 
 - **Plaid tokens** live in `~/.plaid/` — exclude from dotfile repos, cloud sync (iCloud/Dropbox), and machine migration scripts
-- **Anthropic API key** — set as env var, never in project files
+- **LLM API keys** — set as env var, never in project files
 - **Disk encryption** (FileVault/LUKS) is your primary data-at-rest protection. The SQLite database is unencrypted by design (simplicity tradeoff for a local tool)
 
 *Last verified: June 2026. Policies change — check the links above for current terms.*

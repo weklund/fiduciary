@@ -33,6 +33,20 @@ jobs:
 
           echo "No data files found in diff."
 
+      - name: Flag agent config and skill modifications
+        run: |
+          echo "Checking for agent config/skill file changes..."
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          if echo "$FILES" | grep -qE '^\.claude/skills/|^CLAUDE\.md$|^AGENTS\.md$|^\.cursorrules$'; then
+            echo "::warning::This PR modifies agent configuration or skill files."
+            echo "These files are executable instructions that run with full filesystem access."
+            echo "Requires CODEOWNER review before merge."
+            echo ""
+            echo "Modified agent files:"
+            echo "$FILES" | grep -E '^\.claude/skills/|^CLAUDE\.md$|^AGENTS\.md$|^\.cursorrules$'
+          fi
+
       - name: Scan diff for financial PII patterns
         run: |
           echo "Scanning PR diff for financial PII patterns..."

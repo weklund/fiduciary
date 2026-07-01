@@ -27,6 +27,47 @@ toolkit — every contribution should maintain that principle.
 - Opinionated advice without evidence backing (cite your sources)
 - Dependencies on commercial APIs beyond Plaid
 
+## Security: Skills Are Executable Code
+
+**Skill files (`.claude/skills/`) are not documentation — they are executable
+instructions** that LLM agents follow with full filesystem access. A modified
+skill can instruct the agent to read sensitive files, modify scripts, or alter
+financial advice.
+
+Treat skill modifications with the same scrutiny as code changes:
+- Never add instructions that read files outside the project scope
+- Never add instructions that make network requests to third-party URLs
+- Never embed encoded/obfuscated content in skill files
+- Always have a human review skill file changes before merge
+
+This applies across all agent runtimes (Claude Code, Hermes, Gemini CLI, Cursor,
+etc.) — they all read and execute the same skill files.
+
+**Active supply chain campaigns** (TrapDoor, Hades Worm — 2026) specifically target
+agent config files. If you see a PR modifying skills from an unknown contributor,
+review it carefully.
+
+## Data Separation
+
+This project handles sensitive financial data. Contributors must understand the boundary:
+
+| File/Directory | Contains | Git-tracked? |
+|----------------|----------|-------------|
+| `CLAUDE.md` | Advisory frameworks ONLY (no PII) | Yes |
+| `.claude/skills/` | Skill instructions (no PII) | Yes |
+| `data/` | Financial transactions, balances | **NO** (gitignored) |
+| `reports/` | Generated analysis | **NO** (gitignored) |
+| `~/.claude/projects/` | User's financial profile | **NO** (outside repo) |
+| `~/.hermes/memories/` | User's financial profile | **NO** (outside repo) |
+
+**Never commit:**
+- Dollar amounts tied to real financial situations
+- Account numbers (even last-4 masks like ***1234)
+- Transaction data or merchant lists
+- Personal financial goals, income, or debt information
+
+The CI pipeline scans for these patterns and will block your PR if detected.
+
 ## Writing Skills
 
 Skills follow the [Agent Skills open standard](https://agentskills.io):
