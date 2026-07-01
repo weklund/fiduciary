@@ -1,10 +1,11 @@
 """Parsers for Plaid JSON and bank CSV files."""
+
 from __future__ import annotations
 
 import csv
 import json
 from pathlib import Path
-from typing import List, Protocol
+from typing import Protocol
 
 from .detection import detect_csv_format
 from .models import Transaction
@@ -13,8 +14,7 @@ from .models import Transaction
 class Parser(Protocol):
     """Protocol for all file parsers."""
 
-    def parse(self, filepath: Path) -> List[Transaction]:
-        ...
+    def parse(self, filepath: Path) -> list[Transaction]: ...
 
 
 def normalize_date(date_raw: str) -> str:
@@ -50,7 +50,7 @@ def clean_amount(amount_str: str) -> float:
 class PlaidParser:
     """Parse Plaid NDJSON transaction files."""
 
-    def parse(self, filepath: Path) -> List[Transaction]:
+    def parse(self, filepath: Path) -> list[Transaction]:
         """Parse a Plaid NDJSON file into Transaction objects.
 
         Each line is a JSON object with an 'items' key containing
@@ -69,9 +69,7 @@ class PlaidParser:
 
                 for item in obj["items"]:
                     inst = item.get("item", {}).get("institution_id", "")
-                    accounts = {
-                        a["account_id"]: a for a in item.get("accounts", [])
-                    }
+                    accounts = {a["account_id"]: a for a in item.get("accounts", [])}
 
                     for t in item.get("transactions", []):
                         acct = accounts.get(t.get("account_id", ""), {})
@@ -84,19 +82,21 @@ class PlaidParser:
                         pfc = t.get("personal_finance_category", {}) or {}
                         category = pfc.get("primary", "")
 
-                        transactions.append(Transaction(
-                            date=date,
-                            description=desc,
-                            amount=amount,
-                            merchant=merchant,
-                            category=category,
-                            account_name=acct.get("name", ""),
-                            account_mask=mask,
-                            account_type=acct.get("type", ""),
-                            institution=inst,
-                            source="plaid",
-                            source_file=filepath.name,
-                        ))
+                        transactions.append(
+                            Transaction(
+                                date=date,
+                                description=desc,
+                                amount=amount,
+                                merchant=merchant,
+                                category=category,
+                                account_name=acct.get("name", ""),
+                                account_mask=mask,
+                                account_type=acct.get("type", ""),
+                                institution=inst,
+                                source="plaid",
+                                source_file=filepath.name,
+                            )
+                        )
 
         return transactions
 
@@ -104,14 +104,14 @@ class PlaidParser:
 class CsvParser:
     """Parse bank statement CSV files (auto-detects format)."""
 
-    def parse(self, filepath: Path) -> List[Transaction]:
+    def parse(self, filepath: Path) -> list[Transaction]:
         """Parse a bank CSV file into Transaction objects.
 
         Auto-detects the bank format (Amex, Chase, Capital One, etc.)
         based on column headers.
         """
         transactions = []
-        with open(filepath, "r", encoding="utf-8-sig") as f:
+        with open(filepath, encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             headers = reader.fieldnames or []
             fmt = detect_csv_format(headers)
@@ -126,9 +126,7 @@ class CsvParser:
 
         return transactions
 
-    def _parse_row(
-        self, row: dict, fmt: str, filepath: Path
-    ) -> "Transaction | None":
+    def _parse_row(self, row: dict, fmt: str, filepath: Path) -> Transaction | None:
         """Parse a single CSV row based on detected format."""
         if fmt == "amex":
             date_raw = row.get("Date", "")
@@ -156,7 +154,7 @@ class CsvParser:
             mask = ""
             institution = "capital_one"
         else:
-            date_raw = row.get("Date", list(row.values())[0] if row else "")
+            date_raw = row.get("Date", next(iter(row.values())) if row else "")
             desc = row.get("Description", row.get("Name", ""))
             amount_str = row.get("Amount", row.get("Debit", "0"))
             mask = ""

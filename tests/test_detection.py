@@ -1,4 +1,5 @@
 """Tests for CSV format detection."""
+
 from __future__ import annotations
 
 import sys
@@ -25,7 +26,15 @@ class TestDetectCsvFormat:
         assert detect_csv_format(headers) == "chase"
 
     def test_capital_one_by_transaction_date(self):
-        headers = ["Transaction Date", "Posted Date", "Card No.", "Description", "Category", "Debit", "Credit"]
+        headers = [
+            "Transaction Date",
+            "Posted Date",
+            "Card No.",
+            "Description",
+            "Category",
+            "Debit",
+            "Credit",
+        ]
         assert detect_csv_format(headers) == "capital_one"
 
     def test_chase_manual_format(self):

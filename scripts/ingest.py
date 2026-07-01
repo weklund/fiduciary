@@ -11,13 +11,14 @@ Run after every Plaid sync or when new CSVs are added.
 
 Usage: python3 scripts/ingest.py
 """
+
 from __future__ import annotations
 
 import os
 import sqlite3
 from pathlib import Path
 
-from finance import PlaidParser, CsvParser, TransactionRepository
+from finance import CsvParser, PlaidParser, TransactionRepository
 
 PROJECT_DIR = Path(__file__).parent.parent
 DB_PATH = PROJECT_DIR / "data" / "finance.db"

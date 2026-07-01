@@ -1,4 +1,5 @@
 """SQLite repository for financial transactions and accounts."""
+
 from __future__ import annotations
 
 import json
@@ -6,15 +7,14 @@ import os
 import sqlite3
 import stat
 from pathlib import Path
-from typing import Dict, List, Optional
 
-from .models import Account, Transaction
+from .models import Transaction
 
 
 class TransactionRepository:
     """Manages all SQLite operations for the financial ledger."""
 
-    def __init__(self, conn: sqlite3.Connection, db_path: Optional[Path] = None):
+    def __init__(self, conn: sqlite3.Connection, db_path: Path | None = None):
         self._conn = conn
         self._db_path = db_path
 
@@ -63,7 +63,7 @@ class TransactionRepository:
         result = self._conn.execute("PRAGMA integrity_check").fetchone()
         return result[0] == "ok"
 
-    def insert_transactions(self, txns: List[Transaction]) -> int:
+    def insert_transactions(self, txns: list[Transaction]) -> int:
         """Bulk insert transactions with dedup via INSERT OR IGNORE.
 
         Returns the number of rows actually inserted (excludes duplicates).
@@ -147,13 +147,11 @@ class TransactionRepository:
                         updated += 1
         return updated
 
-    def get_summary(self) -> Dict[str, object]:
+    def get_summary(self) -> dict[str, object]:
         """Return a summary dict with count and date range."""
         cursor = self._conn.execute("SELECT COUNT(*) FROM transactions")
         total = cursor.fetchone()[0]
-        cursor = self._conn.execute(
-            "SELECT MIN(date), MAX(date) FROM transactions"
-        )
+        cursor = self._conn.execute("SELECT MIN(date), MAX(date) FROM transactions")
         min_date, max_date = cursor.fetchone()
         return {
             "total": total,

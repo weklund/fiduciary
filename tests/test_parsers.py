@@ -1,4 +1,5 @@
 """Tests for Plaid and CSV parsers."""
+
 from __future__ import annotations
 
 import sys
@@ -6,8 +7,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from finance.parsers import PlaidParser, CsvParser, normalize_date, clean_amount
 import pytest
+
+from finance.parsers import CsvParser, PlaidParser, clean_amount, normalize_date
 
 
 class TestNormalizeDate:

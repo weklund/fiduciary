@@ -42,6 +42,21 @@ if git diff --cached --name-only | grep -q "^CLAUDE.md$"; then
   fi
 fi
 
+# --- Check 4: Lint Python files with Ruff ---
+if command -v ruff &> /dev/null; then
+  PYTHON_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.py$' || true)
+  if [ -n "$PYTHON_FILES" ]; then
+    if ! ruff check $PYTHON_FILES 2>/dev/null; then
+      echo -e "${RED}ERROR: Ruff lint failed. Run 'ruff check --fix' to auto-fix.${NC}" >&2
+      ERRORS=$((ERRORS + 1))
+    fi
+    if ! ruff format --check $PYTHON_FILES 2>/dev/null; then
+      echo -e "${YELLOW}WARNING: Formatting issues. Run 'ruff format' to fix.${NC}" >&2
+      ERRORS=$((ERRORS + 1))
+    fi
+  fi
+fi
+
 if [ $ERRORS -gt 0 ]; then
   echo "" >&2
   echo -e "${RED}Commit blocked. Fix the issues above or use --no-verify to override.${NC}" >&2

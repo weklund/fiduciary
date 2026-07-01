@@ -1,4 +1,5 @@
 """Shared test fixtures for the finance package tests."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -10,7 +11,7 @@ import pytest
 # Add scripts/ to path so we can import the finance package
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from finance import TransactionRepository, Transaction
+from finance import Transaction, TransactionRepository
 
 
 @pytest.fixture

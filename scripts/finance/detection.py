@@ -1,10 +1,9 @@
 """CSV format detection based on header columns."""
+
 from __future__ import annotations
 
-from typing import List
 
-
-def detect_csv_format(headers: List[str]) -> str:
+def detect_csv_format(headers: list[str]) -> str:
     """Detect the bank CSV format from header column names.
 
     Returns one of: 'amex', 'chase', 'capital_one', 'chase_manual', 'generic'.

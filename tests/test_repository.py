@@ -1,4 +1,5 @@
 """Tests for TransactionRepository."""
+
 from __future__ import annotations
 
 import json
@@ -7,7 +8,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from finance.models import Transaction
 from finance.repository import TransactionRepository
 
 
@@ -34,8 +34,16 @@ class TestInsertTransactions:
         )
         row = cursor.fetchone()
         assert row == (
-            "2025-03-15", "ACME COFFEE SHOP", 4.50, "ACME COFFEE SHOP",
-            "FOOD_AND_DRINK", "Checking", "5832", "depository", "ins_123", "plaid"
+            "2025-03-15",
+            "ACME COFFEE SHOP",
+            4.50,
+            "ACME COFFEE SHOP",
+            "FOOD_AND_DRINK",
+            "Checking",
+            "5832",
+            "depository",
+            "ins_123",
+            "plaid",
         )
 
 
@@ -61,20 +69,22 @@ class TestUpdateAccounts:
     def test_update_accounts_from_file(self, tmp_db, tmp_path):
         balances_file = tmp_path / "balances.json"
         data = {
-            "items": [{
-                "item": {"institution_id": "ins_109508"},
-                "accounts": [
-                    {
-                        "account_id": "acct_001",
-                        "name": "Checking",
-                        "official_name": "TOTAL CHECKING",
-                        "type": "depository",
-                        "subtype": "checking",
-                        "mask": "5832",
-                        "balances": {"current": 2450.75, "available": 2400.00, "limit": None},
-                    }
-                ],
-            }]
+            "items": [
+                {
+                    "item": {"institution_id": "ins_109508"},
+                    "accounts": [
+                        {
+                            "account_id": "acct_001",
+                            "name": "Checking",
+                            "official_name": "TOTAL CHECKING",
+                            "type": "depository",
+                            "subtype": "checking",
+                            "mask": "5832",
+                            "balances": {"current": 2450.75, "available": 2400.00, "limit": None},
+                        }
+                    ],
+                }
+            ]
         }
         balances_file.write_text(json.dumps(data) + "\n")
 
@@ -98,18 +108,26 @@ class TestUpdateAccounts:
 
         def write_balance(current):
             data = {
-                "items": [{
-                    "item": {"institution_id": "ins_109508"},
-                    "accounts": [{
-                        "account_id": "acct_001",
-                        "name": "Checking",
-                        "official_name": "",
-                        "type": "depository",
-                        "subtype": "checking",
-                        "mask": "5832",
-                        "balances": {"current": current, "available": current, "limit": None},
-                    }],
-                }]
+                "items": [
+                    {
+                        "item": {"institution_id": "ins_109508"},
+                        "accounts": [
+                            {
+                                "account_id": "acct_001",
+                                "name": "Checking",
+                                "official_name": "",
+                                "type": "depository",
+                                "subtype": "checking",
+                                "mask": "5832",
+                                "balances": {
+                                    "current": current,
+                                    "available": current,
+                                    "limit": None,
+                                },
+                            }
+                        ],
+                    }
+                ]
             }
             balances_file.write_text(json.dumps(data) + "\n")
 
