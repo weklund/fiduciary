@@ -5,8 +5,8 @@ description: >
   "onboard", "set up my profile", "get started", "intake", "configure my finances",
   or when CLAUDE.md has no Client Context section. Conducts a structured interview
   modeled on the CFP Board's 7-step process and writes personalized context to
-  CLAUDE.md and memory files. USE THIS SKILL for any first-time setup or when the
-  user wants to update their financial profile.
+  memory files (never to CLAUDE.md). USE THIS SKILL for any first-time setup or
+  when the user wants to update their financial profile.
 allowed-tools: Bash, Read, Write, Edit
 ---
 
@@ -137,62 +137,22 @@ Also assess capacity (distinct from tolerance):
 
 Once you've gathered enough to be useful (you don't need every answer — adapt to scope):
 
+**IMPORTANT: CLAUDE.md is PUBLIC (git-tracked). NEVER write PII to CLAUDE.md.**
+All personal financial context goes exclusively to memory files (`~/.claude/projects/`),
+which are never committed to git.
+
 **First, check for existing context:**
 ```bash
-grep -c "Client Context" CLAUDE.md 2>/dev/null
 ls ~/.claude/projects/*/memory/user_financial-profile.md 2>/dev/null
 ```
 If existing context is found, present what's there and ask: "I see you've done this before. Want to update your existing profile, or start fresh?" If updating, show what changed and merge rather than overwrite.
 
-1. **Draft the Client Context section** — present it to the user in a code block
+1. **Draft the financial profile** — present it to the user in a code block
 2. **Ask for corrections** — "Does this capture your situation accurately? Anything to add or change?"
-3. **Write memory files** — create/update memory files for durable personal context (this is the PRIMARY output — persists across sessions, never committed to git)
-4. **Optionally update CLAUDE.md** — if the user wants the context available to other Agent Skills-compatible tools, offer to write to the `## Client Context` section. Warn them: "This file is tracked by git — don't commit it with personal data unless you want it public. You can add it to `.git/info/exclude` to keep it local."
+3. **Write memory files** — create/update memory files for durable personal context (this is the ONLY output — persists across sessions, never committed to git)
 
-#### Client Context Template
-
-Write this to CLAUDE.md under `## Client Context`:
-
-```markdown
-## Client Context
-
-- **Household:** [structure, dependents]
-- **Income:** [sources and monthly amounts]
-- **Employment:** [status, stability, trajectory]
-- **Location:** [city, state]
-- **Life stage:** [description]
-
-### Financial Position
-- **Cash/Savings:** [total liquid]
-- **Investments:** [retirement + brokerage, approximate]
-- **Total debt (non-mortgage):** [amount]
-- **Mortgage(s):** [payment/month]
-- **Insurance:** [coverage summary]
-- **Tax situation:** [filing status, bracket, complications]
-
-### Goals (Prioritized)
-1. [Primary goal + timeframe]
-2. [Secondary goal + timeframe]
-3. [Tertiary goal + timeframe]
-
-### Key Metrics to Track
-| Metric | Current | Target | Red Flag |
-|--------|---------|--------|----------|
-| [metric] | [value] | [value] | [value] |
-
-### Behavioral Profile
-- **Risk tolerance:** [description — not just a label]
-- **Money mindset:** [relationship with money, key emotions]
-- **Decision style:** [automated vs. hands-on, frequency of checking]
-- **Stress pattern:** [how they behave under financial pressure]
-
-### Constraints & Guardrails
-- [Hard constraints, e.g., "never sell X", "must keep Y months runway"]
-- [Red lines, e.g., "if metric drops below X, take action Y"]
-
-### Review Cadence
-- [How often they want to check in, what triggers a reassessment]
-```
+Do NOT offer to write to CLAUDE.md. Do NOT write any personal data (income, debts,
+balances, goals, household details) to any git-tracked file.
 
 #### Memory Files
 

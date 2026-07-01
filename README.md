@@ -182,10 +182,59 @@ These aren't opinions — they're synthesized from CFP Board standards, the fidu
 
 ## Privacy & Security
 
-- **All data is local.** `data/` is gitignored. Nothing financial is ever committed.
-- **Your profile stays on your machine.** The `/onboard` intake writes to Claude Code's local memory system (`~/.claude/projects/`), not to the repository. The `## Client Context` section in CLAUDE.md is a placeholder — if you populate it, add it to your local `.git/info/exclude` to prevent accidental commits.
-- **No API keys in the repo.** Plaid CLI handles authentication separately.
+### What stays local
+
+- **All financial data is local.** `data/` is gitignored. Nothing financial is ever committed.
+- **Your profile stays on your machine.** `/onboard` writes exclusively to Claude Code's local memory system (`~/.claude/projects/`), never to git-tracked files.
+- **No API keys in the repo.** Plaid CLI handles authentication separately in `~/.plaid/`.
 - **No tracking, no analytics, no telemetry.** This is a local tool, not a service.
+- **Pre-commit hook** blocks accidental commits of financial data. Install with:
+  ```bash
+  git config core.hooksPath .githooks
+  ```
+
+### What leaves your machine
+
+When you ask questions about your finances, transaction data from your local database is
+sent to your LLM provider for analysis. Choose your configuration carefully:
+
+| Configuration | Recommended? | Server retention | Training | Notes |
+|---|---|---|---|---|
+| **API key (Commercial)** | Yes | 7 days | Never | Best balance of capability + privacy |
+| **API key + ZDR** | Best cloud option | 0 days | Never | Request from Anthropic account team |
+| **Local LLM (Ollama)** | Best privacy | 0 — never leaves device | Never | Reduced capability, no tool use |
+| Enterprise + ZDR | Yes (orgs) | 0 days | Never | Admin controls, SOC 2, ISO 27001 |
+| Consumer Pro/Max (opt-out) | No | 30 days | No | Potential human review for safety |
+| Consumer Pro/Max (opt-in) | **Do not use** | 5 years | **Yes** | Your financial data trains the model |
+
+**Recommended setup:** Use a pay-as-you-go API key from an Anthropic Commercial
+organization (`ANTHROPIC_API_KEY`). Under commercial terms, your data is retained for
+7 days, encrypted at rest (AES-256), and contractually excluded from model training.
+
+**Zero-trust option:** Use a local model via Ollama or llama.cpp. Nothing leaves your
+machine. Set your API endpoint to your local server — the SQLite queries and skill logic
+still work, only the LLM backend changes. Tradeoff: significantly reduced analysis quality.
+
+**Important caveats:**
+- Even under ZDR, sessions flagged for policy violations may be retained up to 2 years
+- Claude Code stores local session transcripts in plaintext at `~/.claude/projects/` for 30 days (adjust via `cleanupPeriodDays` in settings)
+- Certain models (Fable 5, Mythos 5) require 30-day retention and cannot use ZDR
+- Claude Code is excluded from Anthropic's HIPAA BAA regardless of plan
+
+**Policy links:**
+[Commercial Data Retention](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data) |
+[API Retention Docs](https://platform.claude.com/docs/en/manage-claude/api-and-data-retention) |
+[Claude Code Data Usage](https://code.claude.com/docs/en/data-usage) |
+[ZDR Documentation](https://code.claude.com/docs/en/zero-data-retention) |
+[Trust Center](https://trust.anthropic.com/)
+
+### Credential security
+
+- **Plaid tokens** live in `~/.plaid/` — exclude from dotfile repos, cloud sync (iCloud/Dropbox), and machine migration scripts
+- **Anthropic API key** — set as env var, never in project files
+- **Disk encryption** (FileVault/LUKS) is your primary data-at-rest protection. The SQLite database is unencrypted by design (simplicity tradeoff for a local tool)
+
+*Last verified: June 2026. Policies change — check the links above for current terms.*
 
 ## Project Structure
 
