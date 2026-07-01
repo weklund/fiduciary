@@ -147,9 +147,29 @@ Plaid gives you ~30 days of history. For deeper analysis, add bank statement CSV
 
 Supported formats: Amex, Chase, Capital One, or any CSV with `Date,Description,Amount` columns.
 
-## Advisory Frameworks
+## How It Thinks
 
-The system uses evidence-based financial planning principles encoded in CLAUDE.md:
+A certified financial planner doesn't just look at your bank balance and tell you to save more. The CFP Board mandates a 7-step process that starts with understanding your complete situation — circumstances, values, behavioral patterns — before ever making a recommendation. Generic advice violates the fiduciary duty of care.
+
+This system encodes that process. When you run `/onboard`, it conducts the same structured intake a $400/hour advisor would: who are you, what does money mean to you, what are you building toward, how do you behave under stress. When you ask `/next-dollar`, it doesn't just say "pay off debt" — it walks your actual balances and rates through a priority hierarchy, checks your constraints ("never touch the emergency fund"), and accounts for your behavioral profile ("you said you tend to freeze under pressure, so here's one simple action, not five").
+
+The framework underneath is the **Financial Planning Pyramid** — a layered model where you never optimize a higher layer while a lower one is unstable:
+
+```
+Layer 5: LEGACY         — Estate planning, wealth transfer
+Layer 4: FREEDOM        — Aspirational goals, early retirement
+Layer 3: ACCUMULATION   — Investing, retirement, goal funding
+Layer 2: SAFETY         — Emergency fund, insurance, stable cash flow
+Layer 1: PROTECTION     — Expenses covered, high-interest debt managed, no fees bleeding
+```
+
+Every recommendation maps to a layer. If your Layer 1 is unstable (late fees hitting, no autopay, high-interest debt growing), the system won't suggest optimizing your 401(k) allocation. It fixes the foundation first.
+
+On top of the pyramid sits the **Order of Operations** — a decision tree for "what to do with the next dollar." It's not a budget. It's a priority sequence: capture the employer match (instant 50-100% return) before paying 7% debt, pay 7% debt before building an emergency fund beyond the starter cushion, and so on. The math is the math — but the system also knows when to deviate (carry debt during an income transition because runway > optimization).
+
+The behavioral layer is what separates this from a spreadsheet. The system tracks whether you prefer automation or control, whether you panic-sell or freeze, whether you overspend on things or experiences. It uses that to frame recommendations in ways that actually stick — because the best financial plan is the one you'll follow, not the one that's mathematically optimal on paper.
+
+### Frameworks Encoded
 
 - **Financial Planning Pyramid** — prioritize protection → safety → accumulation → freedom → legacy
 - **Order of Operations** — what to do with the next dollar (employer match → high-interest debt → emergency fund → HSA → Roth → 401k → ...)
