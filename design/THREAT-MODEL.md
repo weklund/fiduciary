@@ -7,6 +7,18 @@
 
 ---
 
+## Mitigation Status
+
+| Priority | Total | Mitigated | Remaining |
+|----------|-------|-----------|-----------|
+| **P0** | 3 threats | ✅ 3/3 fully mitigated | None |
+| **P1** | 7 threats | Partially mitigated (documented + hardened) | Query limits, input sanitization, skill sandboxing |
+| **P2** | 5 threats | Documented + accepted | SQLCipher (optional), skill signing (blocked on standard) |
+
+**Legend:** ✅ = implemented, ⬚ = not yet implemented (future work or accepted risk)
+
+---
+
 ## System Overview
 
 ```
@@ -52,26 +64,11 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Add a pre-commit hook** that scans for financial data patterns before allowing commits:
-   ```bash
-   # .githooks/pre-commit
-   #!/usr/bin/env bash
-   # Block commits containing financial PII indicators
-   if git diff --cached --name-only | grep -q "^data/\|\.db$\|\.sqlite$"; then
-     echo "ERROR: Attempting to commit financial data files." >&2
-     exit 1
-   fi
-   # Check CLAUDE.md for populated Client Context (income/debt/balance patterns)
-   if git diff --cached -- CLAUDE.md | grep -qiE '\$[0-9,]+|income:|debt:|balance:'; then
-     echo "WARNING: CLAUDE.md appears to contain financial data." >&2
-     echo "If intentional, use: git commit --no-verify" >&2
-     exit 1
-   fi
-   ```
-2. **Split CLAUDE.md** into two files: `CLAUDE.md` (git-tracked, frameworks only) and `CLAUDE.local.md` (gitignored, client context). Update the onboard skill to write PII exclusively to the local file.
-3. **Add `CLAUDE.local.md` to `.gitignore`** and document the pattern in README.
-4. **Add a GitHub Actions workflow** (`.github/workflows/secret-scan.yml`) that blocks PRs containing patterns like account numbers, dollar amounts in context sections, or filenames matching `data/*`.
-5. **Document in CONTRIBUTING.md** that forks must never include personal financial data.
+1. ✅ **Add a pre-commit hook** — `.githooks/pre-commit` blocks commits of `data/`, `.db` files, and dollar amounts in Client Context.
+2. ✅ **Split CLAUDE.md** — CLAUDE.md contains frameworks only. `CLAUDE.local.md` is gitignored. `/onboard` skill writes exclusively to memory files.
+3. ✅ **Add `CLAUDE.local.md` to `.gitignore`** — done, along with `*.local.md`.
+4. ✅ **Add a GitHub Actions workflow** — `.github/workflows/pii-scan.yml` scans PR diffs for account masks, SSN patterns, and dollar amounts with financial keywords.
+5. ✅ **Document in CONTRIBUTING.md** — "Data Separation" section explains what's tracked vs. gitignored.
 
 ---
 
@@ -90,15 +87,10 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Change the default behavior of `/onboard`** to NEVER write PII to CLAUDE.md. Instead, write all personal context exclusively to agent memory files (e.g., `~/.claude/projects/` for Claude Code, `~/.hermes/MEMORY.md` for Hermes). Remove the "optionally update CLAUDE.md" path entirely. ✅ DONE
-2. **If CLAUDE.md personalization is needed**, use a gitignored `CLAUDE.local.md` file. Add it to `.gitignore` now. ✅ DONE
-3. **Add a sentinel comment** in CLAUDE.md's Client Context section:
-   ```markdown
-   ## Client Context
-   <!-- DO NOT add personal data below this line. This file is PUBLIC. -->
-   <!-- Run /onboard to populate your profile in memory files (never committed). -->
-   ```
-4. **Add `CLAUDE.local.md` and `*.local.md` to `.gitignore`.**
+1. ✅ **Change the default behavior of `/onboard`** — skill now writes exclusively to memory files. "Write to CLAUDE.md" path removed entirely.
+2. ✅ **Add gitignored `CLAUDE.local.md` pattern** — added to `.gitignore`.
+3. ✅ **Add sentinel comments** — CLAUDE.md Client Context section has HTML comments warning against PII.
+4. ✅ **Add `CLAUDE.local.md` and `*.local.md` to `.gitignore`** — done.
 
 ---
 
@@ -117,12 +109,9 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Document in README** that `~/.plaid/` contains sensitive credentials and should be excluded from:
-   - Dotfile repos (add to dotfiles `.gitignore`)
-   - Cloud backup/sync services (exclude from Dropbox, iCloud, etc.)
-   - Machine migration scripts (handle separately with `plaid tokens list/delete`)
-2. **Add a setup checklist item** verifying `~/.plaid/` permissions are `700` or `600`.
-3. **Note Plaid token rotation** — document how to revoke and re-link if compromise is suspected (`plaid tokens delete`).
+1. ✅ **Document in README** — `docs/PRIVACY.md` covers credential locations and exclusion from backups/sync.
+2. ⬚ **Add a setup checklist item** verifying `~/.plaid/` permissions are `700` or `600`.
+3. ⬚ **Note Plaid token rotation** — document how to revoke and re-link if compromise is suspected.
 
 ---
 
@@ -141,17 +130,10 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Document the assumption** that full-disk encryption (FileVault/LUKS/BitLocker) is the primary data-at-rest protection. Add to README prerequisites.
-2. **Verify permissions on every run** — `ingest.py` should check and enforce `chmod 600` on `finance.db` itself (currently only the directory is protected):
-   ```python
-   import stat
-   os.chmod(DB_PATH, stat.S_IRUSR | stat.S_IWUSR)  # 600
-   ```
-3. **Optional: document SQLCipher** as an upgrade path for users who want encrypted-at-rest, but do not require it (complexity tradeoff for a local tool).
-4. **Add a macOS-specific note** about excluding `data/` from Spotlight indexing (prevents financial data from appearing in search results):
-   ```bash
-   touch data/.metadata_never_index
-   ```
+1. ✅ **Document the assumption** — `docs/PRIVACY.md` states disk encryption is the primary protection.
+2. ✅ **Verify permissions on every run** — `ingest.py` now sets `os.umask(0o077)` and `os.chmod(DB_PATH, 0o600)` after commit.
+3. ⬚ **Optional: document SQLCipher** as an upgrade path for users who want encrypted-at-rest.
+4. ✅ **Exclude from Spotlight** — `sync.sh` creates `data/.metadata_never_index` on every run.
 
 ---
 
@@ -170,10 +152,10 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Document explicitly in README** that financial data is sent to the user's LLM provider during analysis. Provide a comparison table of retention policies across configurations (commercial API, consumer, local). ✅ DONE — see README "Privacy & Data Retention" section.
-2. **Consider query result limits** — skills could summarize/aggregate data before sending to the LLM rather than sending raw transaction lists. E.g., "You spent $2,400 on dining in Q1 across 47 transactions" rather than listing all 47.
-3. **Document the local-only alternative** — users who want zero data exfiltration can use a local LLM (via Ollama/llama.cpp) with any compatible agent framework. ✅ DONE — documented in README.
-4. **Add a `--dry-run` flag** to skills that shows what data WOULD be sent to the API without actually sending it.
+1. ✅ **Document in README** — `docs/PRIVACY.md` has full provider comparison table with retention, training, and recommendations.
+2. ⬚ **Consider query result limits** — skills could summarize/aggregate data before sending raw transaction lists to the LLM.
+3. ✅ **Document the local-only alternative** — Ollama documented as zero-trust option in README and `docs/PRIVACY.md`.
+4. ⬚ **Add a `--dry-run` flag** to skills showing what data WOULD be sent to the API.
 
 ---
 
@@ -192,14 +174,10 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Pin the Plaid CLI version** in setup documentation and verify checksums:
-   ```bash
-   brew info plaid/plaid-cli/plaid  # Note version
-   # Document expected version in README
-   ```
-2. **Document the trust decision** — "This project trusts Plaid CLI as a first-party dependency from Plaid, Inc. Users should only install from the official tap."
-3. **Monitor for updates** — suggest users review Plaid CLI changelog before upgrading.
-4. **Python has zero pip dependencies** — document this as a deliberate security choice and maintain it. If pip dependencies are ever needed, add a `requirements.txt` with pinned hashes.
+1. ⬚ **Pin the Plaid CLI version** in setup documentation and verify checksums.
+2. ⬚ **Document the trust decision** — "This project trusts Plaid CLI as a first-party dependency from Plaid, Inc."
+3. ⬚ **Monitor for updates** — suggest users review Plaid CLI changelog before upgrading.
+4. ✅ **Python has zero pip dependencies** — this is the current state and documented in CONTRIBUTING.md as intentional.
 
 ---
 
@@ -218,16 +196,10 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Add a PR template** (`.github/PULL_REQUEST_TEMPLATE.md`):
-   ```markdown
-   ## Checklist
-   - [ ] I have NOT included any personal financial data in this PR
-   - [ ] I have NOT modified CLAUDE.md with personal information
-   - [ ] I have checked `git diff` for any account numbers, balances, or transaction data
-   ```
-2. **Add a GitHub Actions CI check** that scans PR diffs for financial data patterns (dollar amounts in context sections, account masks like `***NNNN`, SSN patterns, etc.).
-3. **Add CONTRIBUTING.md** with explicit warnings about the data separation model.
-4. **Add a branch protection rule** example that prevents merging without the CI check passing.
+1. ✅ **Add a PR template** — `.github/pull_request_template.md` with 6-item data safety checklist.
+2. ✅ **Add a GitHub Actions CI check** — `.github/workflows/pii-scan.yml` scans for account masks, SSNs, and dollar amounts with financial keywords.
+3. ✅ **Add CONTRIBUTING.md** — includes "Data Separation" section with explicit warnings.
+4. ✅ **Add a branch protection rule** — `main` requires PII scan to pass before merge (admin bypass for emergencies).
 
 ---
 
@@ -246,21 +218,10 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Add `umask 077` to `ingest.py`** at the top of `main()`:
-   ```python
-   os.umask(0o077)
-   ```
-2. **Add explicit `chmod 600` on `finance.db`** after creation in `ingest.py`:
-   ```python
-   os.chmod(DB_PATH, 0o600)
-   ```
-3. **Create a shared permissions function** or add a `scripts/check-permissions.sh` that verifies correct permissions on all sensitive paths:
-   ```bash
-   #!/usr/bin/env bash
-   find data/ -not -perm 700 -not -perm 600 -type f -exec chmod 600 {} \;
-   find data/ -not -perm 700 -type d -exec chmod 700 {} \;
-   ```
-4. **Call permissions check from `ingest.py`** at script completion.
+1. ✅ **Add `umask 077` to `ingest.py`** — set at top of `main()`.
+2. ✅ **Add explicit `chmod 600` on `finance.db`** — enforced after every commit in `ingest.py`.
+3. ⬚ **Create a shared permissions function** or `scripts/check-permissions.sh` for full verification.
+4. ⬚ **Call permissions check from `ingest.py`** at script completion.
 
 ---
 
@@ -279,12 +240,9 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Document in README** that `~/.claude/` contains sensitive financial context and should be excluded from cloud sync services.
-2. **Suggest adding `~/.claude/` to backup exclusion lists** (e.g., iCloud exclusions, `.backupexclude`).
-3. **Consider file permissions** — suggest users verify `~/.claude/projects/` is `700`:
-   ```bash
-   chmod -R 700 ~/.claude/projects/
-   ```
+1. ✅ **Document in README** — `docs/PRIVACY.md` lists all runtime memory paths and recommends backup exclusion.
+2. ✅ **Suggest backup exclusion** — `docs/PRIVACY.md` includes `tmutil addexclusion` commands.
+3. ⬚ **Consider file permissions** — suggest users verify `~/.claude/projects/` is `700`.
 
 ---
 
@@ -303,14 +261,9 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Document that the database is rebuildable** — add a note that `python3 scripts/ingest.py` recreates the database from source files.
-2. **Add integrity check** to ingest.py startup:
-   ```python
-   result = conn.execute("PRAGMA integrity_check").fetchone()
-   if result[0] != "ok":
-       print("WARNING: Database integrity check failed. Consider deleting and rebuilding.")
-   ```
-3. **Wrap the ingest in a single transaction** (it currently commits once at the end, which is correct — document this as intentional).
+1. ✅ **Document that the database is rebuildable** — README notes `python3 scripts/ingest.py` recreates from source files.
+2. ✅ **Add integrity check** — `ingest.py` now runs `PRAGMA integrity_check` on startup and warns if failed.
+3. ✅ **Single transaction** — `ingest.py` commits once at the end (already correct, now documented as intentional).
 
 ---
 
@@ -329,10 +282,10 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Sanitize merchant descriptions before including in prompts** — Skills that query transaction data should truncate merchant/description fields to a reasonable length (e.g., 80 characters) and strip control characters, markdown formatting, and instruction-like patterns before passing to the LLM.
-2. **Leverage agent runtime protections where available** — Some runtimes (e.g., Claude Code) include built-in prompt injection detection. Ensure these features remain enabled. Document which runtimes offer this protection.
-3. **Consider read-only filesystem permissions for query-only skills** — Skills like `/spending-audit`, `/weekly-report`, and `/finance-query` only need to READ the database and return analysis. They should not need write access to the filesystem. Explore restricting `allowed-tools` for these skills to exclude `Write`, `Edit`, and destructive `Bash` commands.
-4. **Add input validation in `ingest.py`** — Flag or sanitize transaction descriptions that contain suspicious patterns (e.g., strings longer than 200 characters, text containing "ignore", "system prompt", "instructions", or markdown/code blocks).
+1. ⬚ **Sanitize merchant descriptions before including in prompts** — truncate to 80 chars, strip control characters and instruction-like patterns.
+2. ✅ **Leverage agent runtime protections** — documented in Runtime-Specific Security Notes table (which runtimes have injection defense).
+3. ⬚ **Consider read-only filesystem permissions for query-only skills** — restrict `allowed-tools` for `/spending-audit`, `/weekly-report`, `/finance-query`.
+4. ⬚ **Add input validation in `ingest.py`** — flag transaction descriptions with suspicious patterns (>200 chars, "ignore", "system prompt", etc.).
 
 ---
 
@@ -351,12 +304,10 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Document session log locations in README** for each supported runtime, with instructions to configure retention and exclude from backups.
-2. **Recommend aggressive retention settings:**
-   - Hermes: `sessions.retention_days: 7` and `sessions.auto_prune: true`
-   - Claude Code: `cleanupPeriodDays: 7`
-3. **Add to setup instructions:** exclude `~/.hermes/state.db`, `~/.claude/projects/`, and equivalent paths from cloud sync (iCloud, Dropbox, OneDrive).
-4. **Note that Hermes FTS5 indexing makes financial data instantly searchable** — anyone with read access to `state.db` can `SELECT * FROM messages_fts WHERE messages_fts MATCH 'balance OR income OR debt'`.
+1. ✅ **Document session log locations** — `docs/PRIVACY.md` has per-runtime table with paths, retention defaults, and recommended settings.
+2. ✅ **Recommend aggressive retention settings** — documented: Hermes 7 days, Claude Code 7 days.
+3. ✅ **Backup exclusion instructions** — `docs/PRIVACY.md` includes `tmutil addexclusion` commands for macOS.
+4. ✅ **Note FTS5 indexing risk** — documented in this threat entry's description.
 
 ---
 
@@ -375,10 +326,10 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Add provider-awareness section** to README explaining multi-hop routing risks. Specifically: "If using OpenRouter, your data passes through OpenRouter AND the underlying model provider. Check both retention policies."
-2. **Recommend direct API connections** for financial workloads: Anthropic API (direct), OpenAI API (direct), or Ollama (local). Avoid aggregators for sensitive data.
-3. **Warn about jurisdiction** — some model providers operate in jurisdictions with mandatory data sharing laws. Document which providers are in which jurisdictions.
-4. **For Hermes users specifically:** recommend `provider: anthropic` or `provider: ollama` in `config.yaml` rather than the default `provider: openrouter`.
+1. ✅ **Add provider-awareness section** — `docs/PRIVACY.md` explains multi-hop routing and recommends direct connections.
+2. ✅ **Recommend direct API connections** — documented in both `docs/PRIVACY.md` and Runtime-Specific Security Notes.
+3. ⬚ **Warn about jurisdiction** — document which providers are in which jurisdictions.
+4. ✅ **Hermes config recommendation** — `docs/PRIVACY.md` shows `provider: anthropic` or `provider: ollama` config example.
 
 ---
 
@@ -397,11 +348,11 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Add CODEOWNERS file** requiring explicit review of `.claude/skills/`, `CLAUDE.md`, and any agent config file changes.
-2. **CI check for skill file modifications** — flag any PR that modifies skill definitions for mandatory human review (auto-approve should never apply to these).
-3. **Document that skills are executable code** — in CONTRIBUTING.md, explicitly state: "Skill files (.claude/skills/) are executed as instructions by LLM agents. Treat modifications with the same scrutiny as code changes."
-4. **Pin agent runtime versions** — document recommended minimum versions that include injection scanning (Hermes ≥ v2026.6.x for context file scanning).
-5. **Consider skill signing** — while the Agent Skills standard doesn't support it yet, a local verification (SHA hash of skill files checked at runtime) could detect tampering.
+1. ✅ **Add CODEOWNERS file** — `.github/CODEOWNERS` requires @weklund review for `.claude/skills/`, `CLAUDE.md`, `AGENTS.md`, `.cursorrules`.
+2. ✅ **CI check for skill file modifications** — PII scan workflow flags any PR touching agent config/skill files with a warning.
+3. ✅ **Document that skills are executable code** — CONTRIBUTING.md "Security: Skills Are Executable Code" section with explicit warnings.
+4. ⬚ **Pin agent runtime versions** — document minimum versions with injection scanning.
+5. ⬚ **Consider skill signing** — SHA hash verification of skill files at runtime.
 
 ---
 
@@ -420,8 +371,8 @@ Threat Surfaces:
 
 **Recommended actions:**
 
-1. **Document in README:** "If using Hermes Agent, ensure `agent.save_trajectories: false` in `~/.hermes/config.yaml`. Never use the batch runner against this project."
-2. **Add a check to the `/sync-data` skill** — if running under Hermes, warn if trajectory capture is enabled.
+1. ✅ **Document in README** — `docs/PRIVACY.md` states `agent.save_trajectories: false` and warns against batch runner.
+2. ⬚ **Add a check to the `/sync-data` skill** — detect Hermes runtime and warn if trajectory capture is enabled.
 
 ---
 
@@ -447,32 +398,18 @@ Threat Surfaces:
 
 ---
 
-## P0 Action Plan (Fix Before Public Release)
+## P0 Action Plan — ✅ COMPLETED
 
-These three threats share a common root cause: the architecture encourages writing PII to git-tracked locations.
+All P0 threats have been mitigated. The architectural root cause (PII in git-tracked locations) has been eliminated.
 
-### Immediate Actions
-
-1. **Split CLAUDE.md configuration from personalization:**
-   - Keep `CLAUDE.md` as the git-tracked advisory framework (no PII).
-   - Add `CLAUDE.local.md` pattern for personal context (gitignored).
-   - Update `/onboard` skill to write ONLY to memory files (never to CLAUDE.md).
-
-2. **Install a pre-commit hook:**
-   - Create `.githooks/pre-commit` that blocks commits containing financial data patterns.
-   - Add `git config core.hooksPath .githooks` to setup instructions.
-   - The hook should scan for: dollar amounts in CLAUDE.md, `data/` files, `.db` files.
-
-3. **Add CI protection for PRs:**
-   - GitHub Actions workflow that scans diffs for PII patterns.
-   - PR template with data-safety checklist.
-   - CONTRIBUTING.md with explicit data separation warnings.
-
-4. **Add `.gitignore` entries:**
-   ```
-   CLAUDE.local.md
-   *.local.md
-   ```
+| Action | Status | Implementation |
+|--------|--------|---------------|
+| Split CLAUDE.md from personalization | ✅ | CLAUDE.md = frameworks only. `/onboard` writes to memory files exclusively. |
+| Pre-commit hook | ✅ | `.githooks/pre-commit` blocks `data/`, `.db`, and dollar amounts in Client Context. |
+| CI protection for PRs | ✅ | `.github/workflows/pii-scan.yml` + PR template + CODEOWNERS. |
+| `.gitignore` entries | ✅ | `CLAUDE.local.md`, `*.local.md` added. |
+| Branch protection | ✅ | `main` requires PR + PII scan pass. No direct pushes. |
+| Conventional commit hook | ✅ | `.githooks/commit-msg` enforces `type(scope): description`. |
 
 ---
 
