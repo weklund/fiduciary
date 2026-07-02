@@ -17,6 +17,23 @@ Advisor: walks your actual balances and rates through a priority framework,
          accounts for your constraints, gives a specific recommendation with the math
 ```
 
+## Prerequisites
+
+macOS or Linux (Windows via WSL) · Python 3.8+ · SQLite 3 · [Homebrew](https://brew.sh) · An [Agent Skills-compatible runtime](https://agentskills.io/clients)
+
+<details>
+<summary>Verify your setup</summary>
+
+```bash
+python3 --version   # 3.8+
+sqlite3 --version   # any
+brew --version      # any
+```
+
+All three come pre-installed on macOS. On Linux, install via your package manager.
+
+</details>
+
 ## Quick Start
 
 ```bash
