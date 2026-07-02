@@ -2,7 +2,8 @@
 set -euo pipefail
 umask 077
 
-DATA_DIR="$(cd "$(dirname "$0")/../data" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DATA_DIR="$SCRIPT_DIR/../data"
 SNAPSHOT_DIR="$DATA_DIR/snapshots"
 LATEST_DIR="$DATA_DIR/latest"
 TODAY=$(date +%Y-%m-%d)
