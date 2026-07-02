@@ -1,5 +1,9 @@
 # Fiduciary
 
+<p align="center">
+  <img src="docs/banner.png" alt="fiduciary — your money. your machine. your advisor." width="100%">
+</p>
+
 [![Agent Skills](https://skills.sh/b/weklund/fiduciary)](https://skills.sh/weklund/fiduciary)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
