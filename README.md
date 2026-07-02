@@ -199,7 +199,7 @@ docs/                  ← Deep documentation
 
 > Track everything. Automate the boring stuff. Spend deliberately on what builds the future. Cut ruthlessly what doesn't.
 
-This tool exists because most financial apps sell you products or harvest your data, generic advice doesn't account for YOUR situation, a fiduciary advisor costs $200-400/hour, and your bank has the data — you should too, queryable, on your terms.
+This tool exists because most financial apps sell you products or harvest your data, generic advice doesn't account for YOUR situation, a financial advisor costs $200-400/hour, and your bank has the data.  You should too, queryable, on your terms.
 
 ## Contributing
 
