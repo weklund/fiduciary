@@ -11,6 +11,7 @@ A local-first personal finance advisor. Connects to your bank accounts, stores e
 
 > [!NOTE]
 > **All data stays on your machine.** No cloud storage. No telemetry. No product recommendations. See [docs/PRIVACY.md](docs/PRIVACY.md) for full details.
+> If you have any questions please feel free to hit me on X! [https://x.com/WesEklund](https://x.com/WesEklund)
 
 ```
 You: "What did I spend on dining this month?"
