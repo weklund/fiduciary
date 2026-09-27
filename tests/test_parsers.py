@@ -186,3 +186,20 @@ class TestCsvParserCapitalOne:
         parser = CsvParser()
         txns = parser.parse(fixtures_dir / "sample_capital_one.csv")
         assert all(t.institution == "capital_one" for t in txns)
+
+
+class TestPlaidParserIds:
+    """Test Plaid transaction_id and pending extraction."""
+
+    def test_external_id_and_pending(self, tmp_path):
+        f = tmp_path / "t.json"
+        f.write_text(
+            '{"diagnostic":{}}\n'
+            '{"items":[{"item":{"institution_id":"ins_1"},'
+            '"accounts":[{"account_id":"a1","name":"Chk","type":"depository","mask":"0000"}],'
+            '"transactions":[{"transaction_id":"tx9","account_id":"a1","date":"2026-09-24",'
+            '"name":"PAYROLL","amount":-10,"pending":true}]}]}\n'
+        )
+        txn = PlaidParser().parse(f)[0]
+        assert txn.external_id == "tx9"
+        assert txn.pending is True

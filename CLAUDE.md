@@ -140,7 +140,8 @@ transactions (
   account_type TEXT,          -- depository, credit, loan, investment
   institution TEXT,
   source TEXT,                -- 'plaid' or 'csv'
-  source_file TEXT
+  source_file TEXT,
+  pending INTEGER             -- 1 = Plaid pending (rebuilt each sync)
 );
 
 accounts (
@@ -171,7 +172,7 @@ accounts (
 - POSITIVE amounts = money spent (debits)
 - NEGATIVE amounts = money received (credits/income)
 - Dates are ISO 8601 (YYYY-MM-DD)
-- Deduplication by hash of (date, description, amount, account_mask)
+- Deduplication: Plaid rows by Plaid `transaction_id`; CSV rows by hash of (date, description, amount, account_mask). Pending Plaid rows come only from the latest sync
 - Never commit financial data or secrets to git
 
 ## Client Context

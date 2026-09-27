@@ -6,7 +6,9 @@ Sources:
   - Plaid JSON files (data/snapshots/, data/latest/)
   - CSV statements (data/statements/)
 
-Deduplicates by (date, description, amount, account_hint).
+Plaid rows deduplicate by Plaid transaction_id; CSV rows by
+(date, description, amount, account_mask). Pending Plaid transactions are
+kept only from the latest sync, since they change ID when they post.
 Run after every Plaid sync or when new CSVs are added.
 
 Usage: python3 scripts/ingest.py
@@ -44,25 +46,27 @@ def main() -> None:
 
     plaid_parser = PlaidParser()
     csv_parser = CsvParser()
-    total_inserted = 0
 
-    # Ingest Plaid snapshots
+    total_before = repo.get_summary()["total"]
+
+    # Pending rows are rebuilt from the latest sync on every run
+    repo.delete_pending("plaid")
+
+    # Ingest latest first, then snapshots newest-first: the first version of a
+    # transaction_id wins, so each row reflects its most recent sync.
     print("Ingesting Plaid snapshots...")
-    for f in sorted(SNAPSHOTS_DIR.glob("transactions-*.json")):
-        txns = plaid_parser.parse(f)
-        count = repo.insert_transactions(txns)
-        if count > 0:
-            print(f"  {f.name}: {count} new")
-        total_inserted += count
-
-    # Ingest latest
     latest_txn = LATEST_DIR / "transactions.json"
     if latest_txn.exists():
         txns = plaid_parser.parse(latest_txn)
         count = repo.insert_transactions(txns)
         if count > 0:
             print(f"  latest/transactions.json: {count} new")
-        total_inserted += count
+
+    for f in sorted(SNAPSHOTS_DIR.glob("transactions-*.json"), reverse=True):
+        txns = [t for t in plaid_parser.parse(f) if not t.pending]
+        count = repo.insert_transactions(txns)
+        if count > 0:
+            print(f"  {f.name}: {count} new")
 
     # Ingest CSVs
     print("Ingesting CSV statements...")
@@ -71,7 +75,6 @@ def main() -> None:
         count = repo.insert_transactions(txns)
         if count > 0:
             print(f"  {f.name}: {count} new")
-        total_inserted += count
 
     # Update accounts
     print("Updating account balances...")
@@ -87,7 +90,7 @@ def main() -> None:
     print(f"Database: {DB_PATH}")
     print(f"Total transactions: {summary['total']}")
     print(f"Date range: {summary['min_date']} to {summary['max_date']}")
-    print(f"New this run: {total_inserted}")
+    print(f"New this run: {summary['total'] - total_before}")
 
     repo.close()
     repo.secure()

@@ -21,17 +21,22 @@ class Transaction:
     institution: str = ""
     source: str = ""
     source_file: str = ""
+    external_id: str = ""  # source's own stable ID (Plaid transaction_id)
+    pending: bool = False
 
     @property
     def id(self) -> str:
         """Compute SHA-256 dedup key (truncated to 16 chars).
 
-        Hash is based on date, description (lowercased/stripped), amount,
-        and account_mask — matching the original make_txn_id() behavior.
+        When the source provides a stable ID (Plaid transaction_id), hash that:
+        Plaid can report the same transaction with a different description or
+        date across syncs. Otherwise hash date, description (lowercased/stripped),
+        amount, and account_mask — matching the original make_txn_id() behavior.
         """
-        raw = (
-            f"{self.date}|{self.description.strip().lower()}|{self.amount:.2f}|{self.account_mask}"
-        )
+        if self.external_id:
+            raw = f"{self.source}|{self.external_id}"
+        else:
+            raw = f"{self.date}|{self.description.strip().lower()}|{self.amount:.2f}|{self.account_mask}"
         return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
