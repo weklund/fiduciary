@@ -95,6 +95,8 @@ class PlaidParser:
                                 institution=inst,
                                 source="plaid",
                                 source_file=filepath.name,
+                                external_id=t.get("transaction_id", ""),
+                                pending=bool(t.get("pending", False)),
                             )
                         )
 

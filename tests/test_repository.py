@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
+from finance.models import Transaction
 from finance.repository import TransactionRepository
 
 
@@ -166,3 +168,60 @@ class TestGetSummary:
         assert summary["total"] == 3
         assert summary["min_date"] == "2025-03-15"
         assert summary["max_date"] == "2025-03-17"
+
+
+class TestPendingTransactions:
+    """Test pending-row handling and schema migration."""
+
+    def test_pending_flag_stored(self, repo, tmp_db):
+        txn = Transaction(
+            date="2026-09-24",
+            description="PENDING",
+            amount=5.0,
+            source="plaid",
+            external_id="p1",
+            pending=True,
+        )
+        repo.insert_transactions([txn])
+        assert tmp_db.execute("SELECT pending FROM transactions").fetchone()[0] == 1
+
+    def test_delete_pending_only_removes_pending_for_source(self, repo, tmp_db):
+        repo.insert_transactions(
+            [
+                Transaction(
+                    date="2026-09-24",
+                    description="A",
+                    amount=1.0,
+                    source="plaid",
+                    external_id="p1",
+                    pending=True,
+                ),
+                Transaction(
+                    date="2026-09-24", description="B", amount=2.0, source="plaid", external_id="p2"
+                ),
+                Transaction(date="2026-09-24", description="C", amount=3.0, source="csv"),
+            ]
+        )
+        assert repo.delete_pending("plaid") == 1
+        assert tmp_db.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 2
+
+    def test_migration_adds_column_and_drops_legacy_plaid_rows(self):
+        conn = sqlite3.connect(":memory:")
+        conn.execute(
+            "CREATE TABLE transactions (id TEXT PRIMARY KEY, date TEXT NOT NULL, "
+            "description TEXT NOT NULL, amount REAL NOT NULL, merchant TEXT, category TEXT, "
+            "account_name TEXT, account_mask TEXT, account_type TEXT, institution TEXT, "
+            "source TEXT, source_file TEXT, created_at TEXT)"
+        )
+        conn.execute(
+            "INSERT INTO transactions (id, date, description, amount, source) "
+            "VALUES ('a', '2026-01-01', 'old plaid', 1, 'plaid')"
+        )
+        conn.execute(
+            "INSERT INTO transactions (id, date, description, amount, source) "
+            "VALUES ('b', '2026-01-01', 'csv row', 1, 'csv')"
+        )
+        TransactionRepository(conn).init_schema()
+        rows = conn.execute("SELECT source, pending FROM transactions").fetchall()
+        assert rows == [("csv", 0)]
+        conn.close()

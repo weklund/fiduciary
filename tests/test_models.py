@@ -109,3 +109,34 @@ class TestAccount:
         assert acct.account_id == "acct_001"
         assert acct.name == "Checking"
         assert acct.balance_current is None
+
+
+class TestTransactionExternalId:
+    """Test dedup keys for sources with stable IDs (Plaid)."""
+
+    def test_external_id_ignores_description_and_date(self):
+        pending = Transaction(
+            date="2026-09-24",
+            description="ORIG CO NAME:ACME CORP CO ENTRY DESCR:PAYROLL",
+            amount=-100.0,
+            source="plaid",
+            external_id="txn_abc",
+        )
+        posted = Transaction(
+            date="2026-09-25",
+            description="ACME CORP PAYROLL PPD ID: 0000000000",
+            amount=-100.0,
+            source="plaid",
+            external_id="txn_abc",
+        )
+        assert pending.id == posted.id
+
+    def test_different_external_ids_differ(self):
+        a = Transaction(date="2026-09-24", description="X", amount=1.0, external_id="a")
+        b = Transaction(date="2026-09-24", description="X", amount=1.0, external_id="b")
+        assert a.id != b.id
+
+    def test_without_external_id_uses_content_hash(self):
+        txn = Transaction(date="2025-03-15", description="COFFEE SHOP", amount=4.50)
+        same = Transaction(date="2025-03-15", description="coffee shop ", amount=4.50)
+        assert txn.id == same.id

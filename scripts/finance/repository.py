@@ -34,6 +34,7 @@ class TransactionRepository:
                 institution TEXT,
                 source TEXT,
                 source_file TEXT,
+                pending INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT DEFAULT (datetime('now'))
             );
 
@@ -57,6 +58,26 @@ class TransactionRepository:
             CREATE INDEX IF NOT EXISTS idx_txn_amount ON transactions(amount);
             CREATE INDEX IF NOT EXISTS idx_txn_account ON transactions(account_mask);
         """)
+        columns = {row[1] for row in self._conn.execute("PRAGMA table_info(transactions)")}
+        if "pending" not in columns:
+            # Pre-migration Plaid rows are keyed by description hash; drop them so
+            # they are re-ingested under their Plaid transaction_id.
+            self._conn.execute(
+                "ALTER TABLE transactions ADD COLUMN pending INTEGER NOT NULL DEFAULT 0"
+            )
+            self._conn.execute("DELETE FROM transactions WHERE source = 'plaid'")
+
+    def delete_pending(self, source: str) -> int:
+        """Delete pending rows from a source so they can be re-synced.
+
+        Pending Plaid transactions get a new transaction_id and description once
+        they post, so stale pending rows would otherwise double-count.
+        Returns the number of rows deleted.
+        """
+        cursor = self._conn.execute(
+            "DELETE FROM transactions WHERE source = ? AND pending = 1", (source,)
+        )
+        return cursor.rowcount
 
     def check_integrity(self) -> bool:
         """Run PRAGMA integrity_check. Returns True if DB is healthy."""
@@ -76,8 +97,8 @@ class TransactionRepository:
                     INSERT OR IGNORE INTO transactions
                     (id, date, description, amount, merchant, category,
                      account_name, account_mask, account_type, institution,
-                     source, source_file)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     source, source_file, pending)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         txn.id,
@@ -92,6 +113,7 @@ class TransactionRepository:
                         txn.institution,
                         txn.source,
                         txn.source_file,
+                        int(txn.pending),
                     ),
                 )
                 if self._conn.execute("SELECT changes()").fetchone()[0] > 0:

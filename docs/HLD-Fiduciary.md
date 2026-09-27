@@ -74,7 +74,7 @@ Fiduciary is an open-source, local-first personal finance toolkit. It connects t
 ### 3.3 ingest.py (Python Script)
 
 - **What:** Reads JSON snapshots + CSV statements, normalizes, deduplicates, inserts into SQLite
-- **Dedup:** SHA-256 hash of (date, description, amount, account_mask), truncated to 16 chars
+- **Dedup:** SHA-256 hash (truncated to 16 chars) of the Plaid `transaction_id` for Plaid rows, or of (date, description, amount, account_mask) for CSV rows. Pending Plaid rows are replaced on each run from the latest sync, since Plaid assigns a new ID when they post
 - **CSV parsers:** Auto-detects Amex, Chase, Capital One, generic formats
 - **No network calls:** Purely local file I/O → SQLite
 
